@@ -1,6 +1,7 @@
+import { Notice } from "obsidian";
 import { registerPGNViewModule } from "../../core/module-system";
 import type { ChessNode, IMove } from "../../types";
-import { getICCS, genFENFromBoard } from "../../utils/parse";
+import { getICCS, genFENFromBoard, genChinesePGNFromMoves } from "../../utils/parse";
 
 const ActionsModule = {
     init(host: Record<string, any>) {
@@ -214,6 +215,61 @@ const ActionsModule = {
                     // 3. 完善 URL
                     const url = `https://xiangqiai.com/#/${initialFen} moves ${movesStr}`;
                     window.open(url);
+                    break;
+                }
+                case 'copyPGN': {
+                    // 1. 生成包含分支的 PGN 格式
+                    const pgnMoves = stringifyPGN(host.root);
+                    
+                    // 2. 构建完整的 PGN 格式
+                    let pgnContent = "[Event \"Obsidian Xiangqi\"]\n";
+                    pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
+                    pgnContent += "[Round \"\"]\n";
+                    pgnContent += "[White \"\"]\n";
+                    pgnContent += "[Black \"\"]\n";
+                    pgnContent += "[Result \"*\"]\n\n";
+                    pgnContent += pgnMoves;
+                    pgnContent += " *\n";
+
+                    // 3. 复制到剪贴板
+                    navigator.clipboard.writeText(pgnContent).then(() => {
+                        new Notice('PGN格式已复制到剪贴板');
+                    }).catch(err => {
+                        console.error('复制失败:', err);
+                        new Notice('复制失败，请手动复制');
+                    });
+                    break;
+                }
+                case 'copyChinesePGN': {
+                    // 1. 从 root 节点获取初始棋盘和走棋方
+                    const board = host.root.board!;
+                    const firstTurn = host.root.side === 'red' ? 'black' : 'red';
+
+                    // 2. 根据 currentPath 获取行棋的着法，包含注释
+                    const moves: IMove[] = [];
+                    for (let i = 1; i < host.currentPath.length; i++) {
+                        const nodeId = host.currentPath[i];
+                        const node = host.nodeMap.get(nodeId);
+                        if (node && node.data) {
+                            // 复制节点数据，包含注释
+                            const moveWithComments = {
+                                ...node.data,
+                                comments: node.comments
+                            };
+                            moves.push(moveWithComments);
+                        }
+                    }
+
+                    // 3. 生成中文 PGN 格式
+                    const chinesePgnContent = genChinesePGNFromMoves(board, firstTurn, moves);
+
+                    // 4. 复制到剪贴板
+                    navigator.clipboard.writeText(chinesePgnContent).then(() => {
+                        new Notice('中文PGN格式已复制到剪贴板');
+                    }).catch(err => {
+                        console.error('复制失败:', err);
+                        new Notice('复制失败，请手动复制');
+                    });
                     break;
                 }
             }

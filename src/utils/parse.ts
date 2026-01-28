@@ -483,3 +483,131 @@ export function genFENFromBoard(board: IBoard, turn: ITurn): string {
     const fen = rows.join("/");
     return `${fen} ${turn === "red" ? "w" : "b"}`;
 }
+
+/**
+ * 将旗标标记转换为中文
+ * @param flag 旗标标记
+ * @returns 对应的中文注释
+ */
+function convertFlagToChinese(flag: string): string {
+    const flagMap: Record<string, string> = {
+        "R+": "优势",
+        "B+": "劣势",
+        "=": "均势",
+        "?": "关键",
+        "!": "妙手",
+        "R#": "红胜",
+        "B#": "黑胜"
+    };
+    return flagMap[flag] || flag;
+}
+
+/**
+ * 生成标准 PGN 格式的棋谱
+ * @param board 棋盘状态
+ * @param turn 轮到哪方走棋
+ * @param moves 走法记录
+ * @returns PGN 格式的字符串
+ */
+export function genPGNFromMoves(board: IBoard, turn: ITurn, moves: IMove[]): string {
+    // PGN 格式基本结构
+    let pgnContent = "[Event \"Obsidian Xiangqi\"]\n";
+    pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
+    pgnContent += "[Round \"\"]\n";
+    pgnContent += "[White \"\"]\n";
+    pgnContent += "[Black \"\"]\n";
+    pgnContent += "[Result \"*\"]\n\n";
+
+    // 生成走法记录
+    let tmpBoard: IBoard = board.map((row) => [...row]);
+    let currentTurn = turn;
+    let moveNumber = 1;
+    
+    for (let i = 0; i < moves.length; i++) {
+        const move = moves[i];
+        const iccs = getICCS(move);
+        
+        if (currentTurn === 'red') {
+            pgnContent += `${moveNumber}. ${iccs}`;
+            moveNumber++;
+        } else {
+            pgnContent += `${iccs}`;
+        }
+        
+        // 添加注释（包括旗标标记，转换为中文）
+        if (move.comments && move.comments.length > 0) {
+            for (const comment of move.comments) {
+                const chineseComment = convertFlagToChinese(comment);
+                pgnContent += ` {${chineseComment}}`;
+            }
+        }
+        
+        pgnContent += " ";
+        
+        // 更新临时棋盘
+        tmpBoard[move.to.x][move.to.y] = tmpBoard[move.from.x][move.from.y];
+        tmpBoard[move.from.x][move.from.y] = null;
+        
+        // 切换走棋方
+        currentTurn = currentTurn === 'red' ? 'black' : 'red';
+    }
+
+    pgnContent += "*\n";
+
+    return pgnContent;
+}
+
+/**
+ * 生成标准中文 PGN 格式的棋谱（使用中文记谱法）
+ * @param board 棋盘状态
+ * @param turn 轮到哪方走棋
+ * @param moves 走法记录
+ * @returns 中文 PGN 格式的字符串
+ */
+export function genChinesePGNFromMoves(board: IBoard, turn: ITurn, moves: IMove[]): string {
+    // PGN 格式基本结构
+    let pgnContent = "[Event \"Obsidian Xiangqi\"]\n";
+    pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
+    pgnContent += "[Round \"\"]\n";
+    pgnContent += "[White \"\"]\n";
+    pgnContent += "[Black \"\"]\n";
+    pgnContent += "[Result \"*\"]\n\n";
+
+    // 生成走法记录（使用中文记谱法）
+    let tmpBoard: IBoard = board.map((row) => [...row]);
+    let currentTurn = turn;
+    let moveNumber = 1;
+    
+    for (let i = 0; i < moves.length; i++) {
+        const move = moves[i];
+        const wxf = getWXF(move, tmpBoard);
+        
+        if (currentTurn === 'red') {
+            pgnContent += `${moveNumber}. ${wxf}`;
+            moveNumber++;
+        } else {
+            pgnContent += `${wxf}`;
+        }
+        
+        // 添加注释（包括旗标标记，转换为中文）
+        if (move.comments && move.comments.length > 0) {
+            for (const comment of move.comments) {
+                const chineseComment = convertFlagToChinese(comment);
+                pgnContent += ` {${chineseComment}}`;
+            }
+        }
+        
+        pgnContent += " ";
+        
+        // 更新临时棋盘
+        tmpBoard[move.to.x][move.to.y] = tmpBoard[move.from.x][move.from.y];
+        tmpBoard[move.from.x][move.from.y] = null;
+        
+        // 切换走棋方
+        currentTurn = currentTurn === 'red' ? 'black' : 'red';
+    }
+
+    pgnContent += "*\n";
+
+    return pgnContent;
+}

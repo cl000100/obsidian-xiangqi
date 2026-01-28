@@ -15,7 +15,7 @@
     { title: "前进", icon: "arrow-right", event: "next" },
     { title: "终局", icon: "arrow-right-to-line", event: "toEnd" },
     { title: "翻转", icon: "rotate-ccw", event: "rotate" },
-    { title: "皮卡鱼Web", icon: "external-link", event: "openPikafish" },
+    { title: "分享", icon: "external-link", event: "toggle-share-menu" },
     { title: "标注", icon: "tag", event: "toggle-annotation-menu" },
   ];
 
@@ -50,6 +50,31 @@
 
     menu.showAtMouseEvent(evt);
   }
+
+  // 分享菜单
+  function handleShareMenu(evt: MouseEvent) {
+    const menu = new Menu();
+
+    menu.addItem((mi) => {
+      mi.setTitle("皮卡鱼Web")
+        .setIcon("external-link")
+        .onClick(() => emitEvent("openPikafish"));
+    });
+
+    menu.addItem((mi) => {
+      mi.setTitle("变招PGN")
+        .setIcon("copy")
+        .onClick(() => emitEvent("copyPGN"));
+    });
+
+    menu.addItem((mi) => {
+      mi.setTitle("中文PGN")
+        .setIcon("copy")
+        .onClick(() => emitEvent("copyChinesePGN"));
+    });
+
+    menu.showAtMouseEvent(evt);
+  }
 </script>
 
 <div class="toolbar-container">
@@ -62,11 +87,13 @@
       onclick={(e) => {
         if (event === "toggle-annotation-menu") {
           handleAnnotationMenu(e); // ← 打开标注菜单
+        } else if (event === "toggle-share-menu") {
+          handleShareMenu(e); // ← 打开分享菜单
         } else if (event === "rotate") {
-    eventBus.emit("rotate");
-  } else {
-    emitEvent(event);
-  }
+          eventBus.emit("rotate");
+        } else {
+          emitEvent(event);
+        }
       }}
     ></button>
   {/each}

@@ -1,7 +1,7 @@
 import { MarkdownView, Notice } from "obsidian";
 import { registerXQModule } from "../../core/module-system";
 import type { IMove, IXQHost, PieceType } from "../../types";
-import { getICCS, genFENFromBoard, parseSource } from "../../utils/parse";
+import { getICCS, genFENFromBoard, parseSource, genPGNFromMoves, genChinesePGNFromMoves } from "../../utils/parse";
 import { ConfirmModal } from "../../utils/confirmModal";
 
 const ActionsModule = {
@@ -120,6 +120,44 @@ const ActionsModule = {
             // 4. 生成 URL
             const url = `https://xiangqiai.com/#/${fen} moves ${movesStr}`;
             window.open(url);
+        })
+
+        eventBus.on('copyPGN', () => {
+            // 1. 获取初始局面
+            const { board, firstTurn } = parseSource(host.source);
+
+            // 2. 获取移动记录
+            const moves = host.modified ? host.history : host.PGN;
+
+            // 3. 生成 PGN 格式
+            const pgnContent = genPGNFromMoves(board, firstTurn, moves);
+
+            // 4. 复制到剪贴板
+            navigator.clipboard.writeText(pgnContent).then(() => {
+                new Notice('PGN格式已复制到剪贴板');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                new Notice('复制失败，请手动复制');
+            });
+        })
+
+        eventBus.on('copyChinesePGN', () => {
+            // 1. 获取初始局面
+            const { board, firstTurn } = parseSource(host.source);
+
+            // 2. 获取移动记录
+            const moves = host.modified ? host.history : host.PGN;
+
+            // 3. 生成中文 PGN 格式
+            const chinesePgnContent = genChinesePGNFromMoves(board, firstTurn, moves);
+
+            // 4. 复制到剪贴板
+            navigator.clipboard.writeText(chinesePgnContent).then(() => {
+                new Notice('中文PGN格式已复制到剪贴板');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                new Notice('复制失败，请手动复制');
+            });
         })
 
         eventBus.on('rotate', () => {

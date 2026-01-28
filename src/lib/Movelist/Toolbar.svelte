@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { setIcon } from "obsidian";
+  import { setIcon, Menu } from "obsidian";
   import type { EventBus } from "../../core/event-bus";
   import type { ISettings, IMove } from "../../types";
 
@@ -26,7 +26,7 @@
     { title: "前进", icon: "arrow-right", event: "redo" },
     { title: "终局", icon: "arrow-right-to-line", event: "toEnd" },
     { title: "翻转", icon: "rotate-ccw", event: "rotate" },
-    { title: "皮卡鱼Web", icon: "external-link", event: "openPikafish" },
+    { title: "分享", icon: "external-link", event: "toggle-share-menu" },
   ];
 
   let saveBtnEl: HTMLButtonElement;
@@ -47,6 +47,31 @@
   function useSetSaveIcon(el: HTMLElement) {
     setIcon(el, "save");
   }
+
+  // 分享菜单
+  function handleShareMenu(evt: MouseEvent) {
+    const menu = new Menu();
+
+    menu.addItem((mi) => {
+      mi.setTitle("皮卡鱼Web")
+        .setIcon("external-link")
+        .onClick(() => emitEvent("openPikafish"));
+    });
+
+    menu.addItem((mi) => {
+      mi.setTitle("变招PGN")
+        .setIcon("copy")
+        .onClick(() => emitEvent("copyPGN"));
+    });
+
+    menu.addItem((mi) => {
+      mi.setTitle("中文PGN")
+        .setIcon("copy")
+        .onClick(() => emitEvent("copyChinesePGN"));
+    });
+
+    menu.showAtMouseEvent(evt);
+  }
 </script>
 
 <div class="toolbar-container {settings.position}">
@@ -55,7 +80,13 @@
       class="toolbar-btn"
       aria-label={title}
       use:useSetIcon={icon}
-      onclick={() => emitEvent(event)}
+      onclick={(e) => {
+        if (event === "toggle-share-menu") {
+          handleShareMenu(e);
+        } else {
+          emitEvent(event);
+        }
+      }}
     ></button>
   {/each}
 
