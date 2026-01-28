@@ -557,6 +557,241 @@ export function genPGNFromMoves(board: IBoard, turn: ITurn, moves: IMove[]): str
     return pgnContent;
 }
 
+function pgnCoordToUbb(pgnMove: string): string | null {
+    if (!pgnMove) return null;
+    const clean = pgnMove.replace(/[^A-I0-9]/gi, '').toUpperCase();
+    if (clean.length !== 4) return null;
+    try {
+        const cols = "ABCDEFGHI";
+        const x1 = cols.indexOf(clean[0]);
+        const y1 = 9 - parseInt(clean[1]);
+        const x2 = cols.indexOf(clean[2]);
+        const y2 = 9 - parseInt(clean[3]);
+        return `${x1}${y1}${x2}${y2}`;
+    } catch {
+        return null;
+    }
+}
+
+function ubbCoordToPgn(ubbMove: string): string {
+    if (!ubbMove || ubbMove.length !== 4) return "????";
+    try {
+        const cols = "ABCDEFGHI";
+        const x1 = parseInt(ubbMove[0]);
+        const y1 = 9 - parseInt(ubbMove[1]);
+        const x2 = parseInt(ubbMove[2]);
+        const y2 = 9 - parseInt(ubbMove[3]);
+        const src = `${cols[x1]}${y1}`;
+        const dst = `${cols[x2]}${y2}`;
+        return `${src}-${dst}`;
+    } catch {
+        return "????";
+    }
+}
+
+interface UBBMove {
+    moveStr: string;
+    ubbCode: string;
+    comment: string;
+    children: UBBMove[];
+}
+
+interface UBBComment {
+    branchId: number;
+    ply: number;
+    text: string;
+}
+
+interface UBBVariation {
+    srcBranchId: number;
+    forkPly: number;
+    newBranchId: number;
+    content: string;
+}
+
+export function genUBBFromMoves(
+    board: IBoard,
+    turn: ITurn,
+    moves: IMove[],
+    nodeMap?: Map<string, any>,
+    currentPath?: string[],
+    tags?: Record<string, string>
+): string {
+    const defaultTags: Record<string, string> = {
+        Event: "Obsidian Xiangqi",
+        Date: new Date().toISOString().split('T')[0],
+        Round: "",
+        Red: "",
+        Black: "",
+        Result: "*"
+    };
+
+    const mergedTags = { ...defaultTags, ...tags };
+
+    let branchCounter = 0;
+    const ubbTags: string[] = [];
+    const allComments: Map<string, string> = new Map();
+
+    function buildTreeFromNodeMap(nodeMap: Map<string, any>, rootId: string): any {
+        const root = nodeMap.get(rootId);
+        if (!root) return null;
+
+        // 检查多种可能的注释属性
+        let comment = "";
+        if (root.comments && root.comments.length > 0) {
+            comment = root.comments.map((c: string) => convertFlagToChinese(c)).join(" ");
+        } else if (root.comment) {
+            comment = convertFlagToChinese(root.comment);
+        }
+
+        const node: any = {
+            moveStr: root.data ? getICCS(root.data) : "",
+            ubbCode: root.data ? pgnCoordToUbb(getICCS(root.data)) || "" : "",
+            comment,
+            children: []
+        };
+
+        for (const childId of root.children) {
+            const childNode = buildTreeFromNodeMap(nodeMap, childId.id);
+            if (childNode) {
+                node.children.push(childNode);
+            }
+        }
+
+        return node;
+    }
+
+    function traverseBranch(parentNode: any, branchId: number, startPly: number): string {
+        const moves: string[] = [];
+        let current = parentNode;
+        let currentPly = startPly;
+        
+        while (current.children.length > 0) {
+            const node = current.children[0];
+            currentPly++;
+            
+            if (node.ubbCode) {
+                moves.push(node.ubbCode);
+                if (node.comment) {
+                    allComments.set(`${branchId}_${currentPly}`, node.comment);
+                }
+            }
+            
+            if (current.children.length > 1) {
+                for (let i = 1; i < current.children.length; i++) {
+                    const varNode = current.children[i];
+                    branchCounter++;
+                    const newId = branchCounter;
+                    const forkPly = currentPly;
+                    
+                    // 为变招添加完整的坐标序列
+                    let varStr = "";
+                    let varCurrent = varNode;
+                    let varPly = forkPly;
+                    
+                    // 遍历变招的所有着法，确保包含完整的坐标序列
+                    while (varCurrent) {
+                        if (varCurrent.ubbCode) {
+                            varStr += varCurrent.ubbCode;
+                            // 为变招节点添加注释
+                            if (varCurrent.comment) {
+                                allComments.set(`${newId}_${varPly}`, varCurrent.comment);
+                            }
+                        }
+                        
+                        // 移动到下一个节点
+                        if (varCurrent.children.length > 0) {
+                            varCurrent = varCurrent.children[0];
+                            varPly++;
+                        } else {
+                            varCurrent = null;
+                        }
+                    }
+                    
+                    const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${varStr}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
+                    ubbTags.push(tag);
+                }
+            }
+            
+            current = node;
+        }
+        
+        return moves.join("");
+    }
+
+    let rootNode: any;
+    if (nodeMap && nodeMap.size > 0) {
+        const rootId = Array.from(nodeMap.keys())[0];
+        rootNode = buildTreeFromNodeMap(nodeMap, rootId);
+    } else {
+        rootNode = { moveStr: "", ubbCode: "", comment: "", children: [] };
+        let current = rootNode;
+        for (const move of moves) {
+            const iccs = getICCS(move);
+            const ubbCode = pgnCoordToUbb(iccs) || "";
+            const comment = move.comments && move.comments.length > 0 
+                ? move.comments.map(c => convertFlagToChinese(c)).join(" ") 
+                : "";
+            
+            const node: any = {
+                moveStr: iccs,
+                ubbCode,
+                comment,
+                children: []
+            };
+            current.children.push(node);
+            current = node;
+        }
+    }
+
+    const mainStr = traverseBranch(rootNode, 0, 0);
+
+    const lines: string[] = [];
+    lines.push("[DhtmlXQ]");
+    lines.push("[DhtmlXQ_binit]0919293949596979891777062646668600102030405060708012720323436383[/DhtmlXQ_binit]");
+    lines.push("[DhtmlXQ_firstnum]0[/DhtmlXQ_firstnum]");
+    lines.push(`[DhtmlXQ_adddate]${mergedTags.Date}[/DhtmlXQ_adddate]`);
+    lines.push(`[DhtmlXQ_editdate]${mergedTags.Date}[/DhtmlXQ_editdate]`);
+    lines.push(`[DhtmlXQ_title]${mergedTags.Event}[/DhtmlXQ_title]`);
+    lines.push(`[DhtmlXQ_movelist]${mainStr}[/DhtmlXQ_movelist]`);
+    lines.push(`[DhtmlXQ_length]${mainStr.length / 4}[/DhtmlXQ_length]`);
+    
+    for (const t of ["class", "event", "group", "place", "timerule"]) {
+        lines.push(`[DhtmlXQ_${t}][/DhtmlXQ_${t}]`);
+    }
+    
+    lines.push(`[DhtmlXQ_round]${mergedTags.Round}[/DhtmlXQ_round]`);
+    lines.push("[DhtmlXQ_table]0[/DhtmlXQ_table]");
+    lines.push("[DhtmlXQ_date][/DhtmlXQ_date]");
+    lines.push(`[DhtmlXQ_result]${mergedTags.Result}[/DhtmlXQ_result]`);
+    lines.push(`[DhtmlXQ_redname]${mergedTags.Red}[/DhtmlXQ_redname]`);
+    lines.push(`[DhtmlXQ_blackname]${mergedTags.Black}[/DhtmlXQ_blackname]`);
+    
+    // 移除全局注释，注释应该在对应着法位置添加
+
+    
+    const sortedComments = Array.from(allComments.entries()).sort((a, b) => {
+        const [keyA] = a;
+        const [keyB] = b;
+        const [branchIdA, plyA] = keyA.split('_').map(Number);
+        const [branchIdB, plyB] = keyB.split('_').map(Number);
+        return branchIdA - branchIdB || plyA - plyB;
+    });
+    
+    for (const [key, text] of sortedComments) {
+        lines.push(`[DhtmlXQ_comment${key}]${text}[/DhtmlXQ_comment${key}]`);
+    }
+    
+    for (const tag of ubbTags) {
+        lines.push(tag);
+    }
+    
+    lines.push("[DhtmlXQ_generator]PythonFixed[/DhtmlXQ_generator]");
+    lines.push("[/DhtmlXQ]");
+    
+    return lines.join("\n");
+}
+
 /**
  * 生成标准中文 PGN 格式的棋谱（使用中文记谱法）
  * @param board 棋盘状态

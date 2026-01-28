@@ -1,7 +1,7 @@
 import { Notice } from "obsidian";
 import { registerPGNViewModule } from "../../core/module-system";
 import type { ChessNode, IMove } from "../../types";
-import { getICCS, genFENFromBoard, genChinesePGNFromMoves } from "../../utils/parse";
+import { getICCS, genFENFromBoard, genChinesePGNFromMoves, genUBBFromMoves } from "../../utils/parse";
 
 const ActionsModule = {
     init(host: Record<string, any>) {
@@ -266,6 +266,33 @@ const ActionsModule = {
                     // 4. 复制到剪贴板
                     navigator.clipboard.writeText(chinesePgnContent).then(() => {
                         new Notice('中文PGN格式已复制到剪贴板');
+                    }).catch(err => {
+                        console.error('复制失败:', err);
+                        new Notice('复制失败，请手动复制');
+                    });
+                    break;
+                }
+                case 'copyUBB': {
+                    // 1. 从 root 节点获取初始棋盘和走棋方
+                    const board = host.root.board!;
+                    const firstTurn = host.root.side === 'red' ? 'black' : 'red';
+
+                    // 2. 从 source 中提取 PGN 元数据
+                    const headerRegex = /\[(\w+)\s+"([^"]+)"\]/g;
+                    const tags: Record<string, string> = {};
+                    let match;
+                    while ((match = headerRegex.exec(host.source)) !== null) {
+                        const key = match[1];
+                        const value = match[2];
+                        tags[key] = value;
+                    }
+
+                    // 3. 生成 UBB 格式
+                    const ubbContent = genUBBFromMoves(board, firstTurn, [], host.nodeMap, host.currentPath, tags);
+
+                    // 4. 复制到剪贴板
+                    navigator.clipboard.writeText(ubbContent).then(() => {
+                        new Notice('UBB格式已复制到剪贴板');
                     }).catch(err => {
                         console.error('复制失败:', err);
                         new Notice('复制失败，请手动复制');

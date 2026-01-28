@@ -50,6 +50,7 @@ export interface IMove {
 	captured?: string | null;
 	ICCS?: string;
 	WXF?: string;
+	comments?: string[];
 }
 export type ChessNode = {
 	id: string;

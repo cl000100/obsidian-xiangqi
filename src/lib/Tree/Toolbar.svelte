@@ -73,6 +73,12 @@
         .onClick(() => emitEvent("copyChinesePGN"));
     });
 
+    menu.addItem((mi) => {
+      mi.setTitle("UBB格式")
+        .setIcon("copy")
+        .onClick(() => emitEvent("copyUBB"));
+    });
+
     menu.showAtMouseEvent(evt);
   }
 </script>
