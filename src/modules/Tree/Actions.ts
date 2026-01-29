@@ -218,18 +218,29 @@ const ActionsModule = {
                     break;
                 }
                 case 'copyPGN': {
-                    // 1. 生成包含分支的 PGN 格式
+                    // 1. 获取初始棋盘状态
+                    const board = host.root.board!;
+                    const firstTurn = host.root.side === 'red' ? 'black' : 'red';
+                    
+                    // 2. 生成FEN值
+                    const fen = genFENFromBoard(board, firstTurn);
+                    
+                    // 3. 生成包含分支的 PGN 格式
                     const pgnMoves = stringifyPGN(host.root);
                     
-                    // 2. 构建完整的 PGN 格式
-                    let pgnContent = "[Event \"Obsidian Xiangqi\"]\n";
+                    // 4. 构建完整的 PGN 格式
+                    let pgnContent = "[Game \"Chinese Chess\"]\n";
+                    pgnContent += "[Event \"\"]\n";
+                    pgnContent += "[Title \"残局\"]\n";
                     pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
                     pgnContent += "[Round \"\"]\n";
-                    pgnContent += "[White \"\"]\n";
-                    pgnContent += "[Black \"\"]\n";
-                    pgnContent += "[Result \"*\"]\n\n";
+                    pgnContent += "[RedName \"\"]\n";
+                    pgnContent += "[BlackName \"\"]\n";
+                    pgnContent += "[Result \"未知\"]\n";
+                    pgnContent += `[FEN \"${fen}\"]\n`;
+                    pgnContent += "[Table \"0\"]\n\n";
                     pgnContent += pgnMoves;
-                    pgnContent += " *\n";
+                    pgnContent += "\n";
 
                     // 3. 复制到剪贴板
                     navigator.clipboard.writeText(pgnContent).then(() => {
@@ -331,7 +342,26 @@ function stringifyPGN(root: ChessNode): string {
         return nodeBrothers;
     }
 
-    function walk(node: ChessNode, stepNum: number): string {
+    function walk(node: ChessNode, stepNum: number, indent: string = ''): string {
+        let result = '';
+
+        if (node.side === 'red') {
+            result += `${indent}${stepNum}. ${node.data!.ICCS}`;
+        } else if (node.side === 'black') {
+            result += `${indent}${node.data!.ICCS}`;
+        }
+
+        // 递归主线（第一个子节点）
+        if (node.children[0]) {
+            const next = node.children[0];
+            const nextStepNum = next.side === 'red' ? stepNum + 1 : stepNum;
+            result += `\n${walk(next, nextStepNum, indent)}`;
+        }
+
+        return result;
+    }
+
+    function processNode(node: ChessNode, stepNum: number): string {
         let result = '';
 
         if (node.side === 'red') {
@@ -340,22 +370,22 @@ function stringifyPGN(root: ChessNode): string {
             result += `${node.data!.ICCS}`;
         }
 
-        // 注释
-        if (node.comments?.length) {
-            for (const c of node.comments) {
-                result += `{${c}}`;
-            }
-        }
-
         // 分支（兄弟节点）
         const brothers = nodeBrothers.get(node);
         if (brothers?.length) {
             for (const brother of brothers) {
+                result += `\n(`;
                 if (brother.side === 'red') {
-                    result += ` (${walk(brother, stepNum)})`;
+                    result += `\n${processTree(brother, stepNum)}`;
                 } else if (brother.side === 'black') {
-                    result += ` (${stepNum}. ... ${walk(brother, stepNum)})`;
+                    result += `\n${stepNum}. ... ${brother.data!.ICCS}`;
+                    if (brother.children[0]) {
+                        const next = brother.children[0];
+                        const nextStepNum = next.side === 'red' ? stepNum + 1 : stepNum;
+                        result += `\n${processTree(next, nextStepNum)}`;
+                    }
                 }
+                result += `\n)`;
             }
         }
 
@@ -363,14 +393,49 @@ function stringifyPGN(root: ChessNode): string {
         if (node.children[0]) {
             const next = node.children[0];
             const nextStepNum = next.side === 'red' ? stepNum + 1 : stepNum;
-            result += ` ${walk(next, nextStepNum)}`;
+            result += `\n${processNode(next, nextStepNum)}`;
         }
 
         return result;
     }
 
-    const pgn = walk(root, 0);
-    // console.log(pgn);
-    return pgn;
+    function processTree(root: ChessNode, initialStepNum: number): string {
+        let result = '';
+        let currentNode = root;
+        let currentStepNum = initialStepNum;
+
+        while (currentNode) {
+            if (currentNode.side === 'red') {
+                result += `${currentStepNum}. ${currentNode.data!.ICCS}`;
+            } else if (currentNode.side === 'black') {
+                result += `${currentNode.data!.ICCS}`;
+            }
+
+            if (currentNode.children[0]) {
+                currentNode = currentNode.children[0];
+                currentStepNum = currentNode.side === 'red' ? currentStepNum + 1 : currentStepNum;
+                result += `\n`;
+            } else {
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    // 处理根节点注释
+    let result = '';
+    if (root.comments?.length) {
+        for (const c of root.comments) {
+            result += `{${c}}\n\n`;
+        }
+    }
+
+    // 处理主变
+    if (root.children[0]) {
+        result += processNode(root.children[0], 1);
+    }
+
+    return result;
 
 }

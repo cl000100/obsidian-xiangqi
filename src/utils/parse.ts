@@ -510,13 +510,20 @@ function convertFlagToChinese(flag: string): string {
  * @returns PGN 格式的字符串
  */
 export function genPGNFromMoves(board: IBoard, turn: ITurn, moves: IMove[]): string {
+    // 生成FEN值
+    const fen = genFENFromBoard(board, turn);
+    
     // PGN 格式基本结构
-    let pgnContent = "[Event \"Obsidian Xiangqi\"]\n";
+    let pgnContent = "[Game \"Chinese Chess\"]\n";
+    pgnContent += "[Event \"\"]\n";
+    pgnContent += "[Title \"残局\"]\n";
     pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
     pgnContent += "[Round \"\"]\n";
-    pgnContent += "[White \"\"]\n";
-    pgnContent += "[Black \"\"]\n";
-    pgnContent += "[Result \"*\"]\n\n";
+    pgnContent += "[RedName \"\"]\n";
+    pgnContent += "[BlackName \"\"]\n";
+    pgnContent += "[Result \"未知\"]\n";
+    pgnContent += `[FEN \"${fen}\"]\n`;
+    pgnContent += "[Table \"0\"]\n\n";
 
     // 生成走法记录
     let tmpBoard: IBoard = board.map((row) => [...row]);
@@ -618,12 +625,13 @@ export function genUBBFromMoves(
     tags?: Record<string, string>
 ): string {
     const defaultTags: Record<string, string> = {
-        Event: "Obsidian Xiangqi",
-        Date: new Date().toISOString().split('T')[0],
+        Event: "",
+        Title: "残局",
+        Date: new Date().toISOString().replace('T', ' ').split('.')[0],
         Round: "",
         Red: "",
         Black: "",
-        Result: "*"
+        Result: "未知"
     };
 
     const mergedTags = { ...defaultTags, ...tags };
@@ -746,13 +754,59 @@ export function genUBBFromMoves(
 
     const mainStr = traverseBranch(rootNode, 0, 0);
 
+    // 生成UBB初始局面字符串 (Binit格式)
+    function generateUBBInit(board: IBoard): string {
+        // 1. 扫描棋盘，收集所有棋子的位置
+        const foundPieces: Record<string, Array<[number, number]>> = {
+            'R': [], 'N': [], 'B': [], 'A': [], 'K': [], 'C': [], 'P': [],
+            'r': [], 'n': [], 'b': [], 'a': [], 'k': [], 'c': [], 'p': []
+        };
+        
+        for (let y = 0; y < 10; y++) {
+            for (let x = 0; x < 9; x++) {
+                const piece = board[x][y];
+                if (piece && foundPieces[piece]) {
+                    foundPieces[piece].push([x, y]);
+                }
+            }
+        }
+        
+        // 2. 定义Binit的固定顺序 (32个位置)
+        const ORDER = [
+            // 红方: RNBAKABNRCCPPPPP
+            'R', 'N', 'B', 'A', 'K', 'A', 'B', 'N', 'R', 'C', 'C', 'P', 'P', 'P', 'P', 'P',
+            // 黑方: rnbakabnrccppppp
+            'r', 'n', 'b', 'a', 'k', 'a', 'b', 'n', 'r', 'c', 'c', 'p', 'p', 'p', 'p', 'p'
+        ];
+        
+        // 3. 按照顺序填充Binit
+        let ubbInit = "";
+        const pieceCounters: Record<string, number> = {
+            'R': 0, 'N': 0, 'B': 0, 'A': 0, 'K': 0, 'C': 0, 'P': 0,
+            'r': 0, 'n': 0, 'b': 0, 'a': 0, 'k': 0, 'c': 0, 'p': 0
+        };
+        
+        for (const piece of ORDER) {
+            if (foundPieces[piece] && pieceCounters[piece] < foundPieces[piece].length) {
+                const [x, y] = foundPieces[piece][pieceCounters[piece]];
+                ubbInit += `${x}${y}`;
+                pieceCounters[piece]++;
+            } else {
+                // 棋子被吃掉了，用99表示
+                ubbInit += "99";
+            }
+        }
+        
+        return ubbInit;
+    }
+    
     const lines: string[] = [];
     lines.push("[DhtmlXQ]");
-    lines.push("[DhtmlXQ_binit]0919293949596979891777062646668600102030405060708012720323436383[/DhtmlXQ_binit]");
+    lines.push(`[DhtmlXQ_binit]${generateUBBInit(board)}[/DhtmlXQ_binit]`);
     lines.push("[DhtmlXQ_firstnum]0[/DhtmlXQ_firstnum]");
     lines.push(`[DhtmlXQ_adddate]${mergedTags.Date}[/DhtmlXQ_adddate]`);
-    lines.push(`[DhtmlXQ_editdate]${mergedTags.Date}[/DhtmlXQ_editdate]`);
-    lines.push(`[DhtmlXQ_title]${mergedTags.Event}[/DhtmlXQ_title]`);
+    lines.push(`[DhtmlXQ_editdate][/DhtmlXQ_editdate]`);
+    lines.push(`[DhtmlXQ_title]${mergedTags.Title}[/DhtmlXQ_title]`);
     lines.push(`[DhtmlXQ_movelist]${mainStr}[/DhtmlXQ_movelist]`);
     lines.push(`[DhtmlXQ_length]${mainStr.length / 4}[/DhtmlXQ_length]`);
     
@@ -786,7 +840,7 @@ export function genUBBFromMoves(
         lines.push(tag);
     }
     
-    lines.push("[DhtmlXQ_generator]PythonFixed[/DhtmlXQ_generator]");
+    lines.push("[DhtmlXQ_generator]棋者象棋[/DhtmlXQ_generator]");
     lines.push("[/DhtmlXQ]");
     
     return lines.join("\n");
@@ -800,13 +854,20 @@ export function genUBBFromMoves(
  * @returns 中文 PGN 格式的字符串
  */
 export function genChinesePGNFromMoves(board: IBoard, turn: ITurn, moves: IMove[]): string {
+    // 生成FEN值
+    const fen = genFENFromBoard(board, turn);
+    
     // PGN 格式基本结构
-    let pgnContent = "[Event \"Obsidian Xiangqi\"]\n";
+    let pgnContent = "[Game \"Chinese Chess\"]\n";
+    pgnContent += "[Event \"\"]\n";
+    pgnContent += "[Title \"残局\"]\n";
     pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
     pgnContent += "[Round \"\"]\n";
-    pgnContent += "[White \"\"]\n";
-    pgnContent += "[Black \"\"]\n";
-    pgnContent += "[Result \"*\"]\n\n";
+    pgnContent += "[RedName \"\"]\n";
+    pgnContent += "[BlackName \"\"]\n";
+    pgnContent += "[Result \"未知\"]\n";
+    pgnContent += `[FEN \"${fen}\"]\n`;
+    pgnContent += "[Table \"0\"]\n\n";
 
     // 生成走法记录（使用中文记谱法）
     let tmpBoard: IBoard = board.map((row) => [...row]);
