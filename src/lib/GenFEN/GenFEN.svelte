@@ -3,6 +3,7 @@
   import PieceBTNs from "./PieceBTNs.svelte";
   import type { IBoard, IOptions, IPosition, ISettings } from "../../types";
   import type { EventBus } from "../../core/event-bus";
+  import { isIOS } from "../../utils/device";
   import Toolbar from "./Toolbar.svelte";
 
   interface Props {
@@ -16,10 +17,10 @@
 
   let { settings, board, markedPos, selectedPiece, currentTurn, eventBus }: Props = $props();
 
-  let position = $derived(settings.position);
+  let position = $derived(isIOS() ? settings.iOSPosition : settings.position);
 </script>
 
-<div class="XQ-container {settings.position}">
+<div class="XQ-container {(isIOS() ? settings.iOSPosition : settings.position)}">
   <Board {settings} {board} {markedPos} {currentTurn} {eventBus} rotated={false} />
   <PieceBTNs {settings} {board} {eventBus} {position} {selectedPiece} />
   <Toolbar {eventBus} {position} {currentTurn} />

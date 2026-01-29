@@ -13,6 +13,13 @@ export interface ISettings {
 	showMovelistText: boolean;
 	boardMarginTop: number;
 	boardMarginBottom: number;
+	// iOS specific settings
+	iOSBoardMarginTop: number;
+	iOSBoardMarginBottom: number;
+	iOSCellSize: number;
+	iOSPosition: "bottom" | "right";
+	// Comments box height
+	commentsBoxHeight: number;
 	viewOnly?: boolean;
 	rotated?: boolean;
 }

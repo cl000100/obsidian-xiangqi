@@ -4,6 +4,7 @@
   import Toolbar from "./Toolbar.svelte";
   import type { ChessNode, IBoard, IPosition, ISettings, NodeMap } from "../../types";
   import type { EventBus } from "../../core/event-bus";
+  import { isIOS } from "../../utils/device";
   import { onMount, tick } from "svelte";
 
   interface Props {
@@ -29,7 +30,7 @@
   }: Props = $props();
 
   let lastMove = $derived(currentNode.data);
-  let position = $derived(settings.position);
+  let position = $derived(isIOS() ? settings.iOSPosition : settings.position);
   let rotated = $state(false);
   let variations = $derived(
     currentNode.children

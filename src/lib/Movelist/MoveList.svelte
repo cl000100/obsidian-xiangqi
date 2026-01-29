@@ -3,6 +3,7 @@
   import { scrollToBTN } from "../../utils/utils";
   import type { EventBus } from "../../core/event-bus";
   import type { ISettings, IBoard, IMove } from "../../types";
+  import { isIOS } from "../../utils/device";
 
   interface Props {
     settings: ISettings;
@@ -35,12 +36,12 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="move-container {settings.position}"
-  style="--height: {11 * settings.cellSize}px;
-    --width: {10 * settings.cellSize}px;
+  class="move-container {(isIOS() ? settings.iOSPosition : settings.position)}"
+  style="--height: {11 * (isIOS() ? settings.iOSCellSize : settings.cellSize)}px;
+    --width: {10 * (isIOS() ? settings.iOSCellSize : settings.cellSize)}px;
     --fontsize: {settings.fontSize}px;"
 >
-  <ul class="move-list {settings.position}" bind:this={ulRef}>
+  <ul class="move-list {(isIOS() ? settings.iOSPosition : settings.position)}" bind:this={ulRef}>
     <li class="start" bind:this={itemRefs[0]}>
       <span class="roundnum">0</span>
       <span

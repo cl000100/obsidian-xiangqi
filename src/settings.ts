@@ -16,6 +16,13 @@ export const DEFAULT_SETTINGS: ISettings = {
 	showMovelistText: true,
 	boardMarginTop: 20,
 	boardMarginBottom: 20,
+	// iOS specific settings
+	iOSBoardMarginTop: 10,
+	iOSBoardMarginBottom: 10,
+	iOSCellSize: 40,
+	iOSPosition: "bottom",
+	// Comments box height
+	commentsBoxHeight: 200,
 	viewOnly: false,
 	rotated: false,
 };
@@ -247,6 +254,130 @@ export class XQSettingTab extends PluginSettingTab {
 				slider.sliderEl.addEventListener("input", () => {
 					const value = slider.getValue();
 					settings.boardMarginBottom = value;
+					valueLabel.textContent = value.toString();
+				});
+			});
+
+		new Setting(containerEl).setName("iOS 特定设置").setHeading();
+
+		new Setting(containerEl)
+			.setName("iOS 上边距")
+			.setDesc("调整 iOS 设备上的棋盘顶部边距")
+			.addSlider((slider) => {
+				const controlEl = slider.sliderEl.parentElement!;
+				const valueLabel = createEl("span", {
+					text: Math.abs(settings.iOSBoardMarginTop).toString(),
+					cls: "slider-value-label",
+				});
+				controlEl.prepend(valueLabel);
+				slider
+					.setLimits(0, 100, 1)
+					.setValue(settings.iOSBoardMarginTop)
+					.onChange((value) => {
+						settings.iOSBoardMarginTop = value;
+						valueLabel.textContent = value.toString();
+						this.plugin.saveSettings();
+						this.plugin.refresh();
+					});
+				slider.sliderEl.addEventListener("input", () => {
+					const value = slider.getValue();
+					settings.iOSBoardMarginTop = value;
+					valueLabel.textContent = value.toString();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName("iOS 下边距")
+			.setDesc("调整 iOS 设备上的棋盘底部边距")
+			.addSlider((slider) => {
+				const controlEl = slider.sliderEl.parentElement!;
+				const valueLabel = createEl("span", {
+					text: Math.abs(settings.iOSBoardMarginBottom).toString(),
+					cls: "slider-value-label",
+				});
+				controlEl.prepend(valueLabel);
+				slider
+					.setLimits(0, 100, 1)
+					.setValue(settings.iOSBoardMarginBottom)
+					.onChange((value) => {
+						settings.iOSBoardMarginBottom = value;
+						valueLabel.textContent = value.toString();
+						this.plugin.saveSettings();
+						this.plugin.refresh();
+					});
+				slider.sliderEl.addEventListener("input", () => {
+					const value = slider.getValue();
+					settings.iOSBoardMarginBottom = value;
+					valueLabel.textContent = value.toString();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName("iOS 界面大小")
+			.setDesc("调整 iOS 设备上的棋盘大小")
+			.addSlider((slider) => {
+				const controlEl = slider.sliderEl.parentElement!;
+				const valueLabel = createEl("span", {
+					text: Math.abs(settings.iOSCellSize).toString(),
+					cls: "slider-value-label",
+				});
+				controlEl.prepend(valueLabel);
+				slider
+					.setLimits(15, 100, 1)
+					.setValue(settings.iOSCellSize)
+					.onChange((value) => {
+						settings.iOSCellSize = value;
+						valueLabel.textContent = value.toString();
+						this.plugin.saveSettings();
+						this.plugin.refresh();
+					});
+				slider.sliderEl.addEventListener("input", () => {
+					const value = slider.getValue();
+					settings.iOSCellSize = value;
+					valueLabel.textContent = value.toString();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName("iOS 布局")
+			.setDesc("设置 iOS 设备上的布局方向")
+			.addDropdown((dropdown) => {
+				dropdown.addOptions({
+					right: "横向",
+					bottom: "纵向",
+				});
+
+				dropdown
+					.setValue(settings.iOSPosition)
+					.onChange((position) => {
+						settings.iOSPosition = position as "bottom" | "right";
+						this.plugin.saveSettings();
+						this.plugin.refresh();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName("注释框高度")
+			.setDesc("调整注释框的高度")
+			.addSlider((slider) => {
+				const controlEl = slider.sliderEl.parentElement!;
+				const valueLabel = createEl("span", {
+					text: Math.abs(settings.commentsBoxHeight).toString(),
+					cls: "slider-value-label",
+				});
+				controlEl.prepend(valueLabel);
+				slider
+					.setLimits(50, 500, 10)
+					.setValue(settings.commentsBoxHeight)
+					.onChange((value) => {
+						settings.commentsBoxHeight = value;
+						valueLabel.textContent = value.toString();
+						this.plugin.saveSettings();
+						this.plugin.refresh();
+					});
+				slider.sliderEl.addEventListener("input", () => {
+					const value = slider.getValue();
+					settings.commentsBoxHeight = value;
 					valueLabel.textContent = value.toString();
 				});
 			});

@@ -2,6 +2,7 @@
   import type { EventBus } from "../core/event-bus";
   import type { IBoard, IMove, IPosition, ISettings } from "../types";
   import { PIECE_CHARS } from "../types";
+  import { isIOS } from "../utils/device";
 
   interface Props {
     settings: ISettings;
@@ -45,7 +46,10 @@
     rotated && markedPos ? rotatePos(markedPos) : markedPos,
   );
 
-  let { cellSize, showLastMove, showTurnBorder, showCoordinateLabels, boardMarginTop, boardMarginBottom } = $derived(settings);
+  let { showLastMove, showTurnBorder, showCoordinateLabels } = $derived(settings);
+  let cellSize = $derived(isIOS() ? settings.iOSCellSize : settings.cellSize);
+  let boardMarginTop = $derived(isIOS() ? settings.iOSBoardMarginTop : settings.boardMarginTop);
+  let boardMarginBottom = $derived(isIOS() ? settings.iOSBoardMarginBottom : settings.boardMarginBottom);
   let margin = $derived(cellSize * 0.1);
   let width = $derived(cellSize * 10);
   let height = $derived(cellSize * 11);

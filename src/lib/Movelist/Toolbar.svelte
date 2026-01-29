@@ -2,6 +2,7 @@
   import { setIcon, Menu } from "obsidian";
   import type { EventBus } from "../../core/event-bus";
   import type { ISettings, IMove } from "../../types";
+  import { isIOS } from "../../utils/device";
 
   interface Props {
     settings: ISettings;
@@ -80,7 +81,7 @@
   }
 </script>
 
-<div class="toolbar-container {settings.position}">
+<div class="toolbar-container {(isIOS() ? settings.iOSPosition : settings.position)}">
   {#each buttons as { title, icon, event }}
     <button
       class="toolbar-btn"

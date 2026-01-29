@@ -4,6 +4,7 @@
   import MoveList from "./MoveList.svelte";
   import type { IBoard, IMove, IOptions, IPosition, ISettings } from "../../types";
   import type { EventBus } from "../../core/event-bus";
+  import { isIOS } from "../../utils/device";
   import { onMount, tick } from "svelte";
 
   interface Props {
@@ -44,7 +45,7 @@
   });
 </script>
 
-<div class="XQ-container {settings.position}">
+<div class="XQ-container {(isIOS() ? settings.iOSPosition : settings.position)}">
   <Board {settings} {board} {lastMove} {markedPos} {currentTurn} {eventBus} {rotated} />
   <Toolbar {settings} {eventBus} {modified} {PGN} {isprotected} />
   {#if settings.showMovelist}

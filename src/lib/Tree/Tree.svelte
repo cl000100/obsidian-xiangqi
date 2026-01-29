@@ -5,6 +5,7 @@
   import { createInteractionHandlers } from "./interact";
   import { calculateTreeLayout } from "./layout";
   import { setIcon } from "obsidian";
+  import { isIOS } from "../../utils/device";
 
   interface Props {
     nodeMap: NodeMap;
@@ -66,10 +67,11 @@
   }
 
   // ---- 常量 ----
-  let spacingX = $derived((settings?.cellSize || 50) * 0.44); // 基于cellSize计算，保持比例
-  let spacingY = $derived((settings?.cellSize || 50) * 0.3); // 基于cellSize计算，保持比例
-  let width = $derived((settings?.cellSize || 50) * 0.26); // 基于cellSize计算，保持比例
-  let height = $derived((settings?.cellSize || 50) * 0.22); // 基于cellSize计算，保持比例
+  let currentCellSize = $derived(isIOS() ? (settings?.iOSCellSize || 40) : (settings?.cellSize || 50));
+  let spacingX = $derived(currentCellSize * 0.44); // 基于cellSize计算，保持比例
+  let spacingY = $derived(currentCellSize * 0.3); // 基于cellSize计算，保持比例
+  let width = $derived(currentCellSize * 0.26); // 基于cellSize计算，保持比例
+  let height = $derived(currentCellSize * 0.22); // 基于cellSize计算，保持比例
   const lucide_message_square_text = `<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M7 11h10"/><path d="M7 15h6"/><path d="M7 7h8"/>`;
   // const lucide_smile = `<path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/>`;
   const lucide_thumbs_up = `<path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/><path d="M7 10v12"/>`;
@@ -151,7 +153,15 @@
   function adjustTextareaHeight() {
     if (!textareaEl) return;
     textareaEl.classList.add("auto-height");
-    textareaEl.style.setProperty("--textarea-height", `${textareaEl.scrollHeight}px`);
+    // 获取用户设置的高度作为最小高度
+    const minHeight = settings.commentsBoxHeight || 200;
+    // 计算最大高度（设置高度的1.5倍，允许文本内容稍多一点）
+    const maxHeight = minHeight * 1.5;
+    // 计算文本内容的实际高度
+    const contentHeight = textareaEl.scrollHeight;
+    // 使用合适的高度值：不小于最小高度，不大于最大高度
+    const height = Math.min(Math.max(minHeight, contentHeight), maxHeight);
+    textareaEl.style.setProperty("--textarea-height", `${height}px`);
     textareaEl.classList.remove("auto-height");
   }
 
@@ -385,6 +395,7 @@
     oninput={handleCommentsInput}
     onblur={handleCommentsBlur}
     rows="10"
+    style="--min-textarea-height: {settings.commentsBoxHeight}px; --max-textarea-height: {settings.commentsBoxHeight * 1.5}px;"
   ></textarea>
 </div>
 
@@ -445,19 +456,19 @@
   }
 
   textarea {
-    width: 100%;
-    height: var(--textarea-height, 200px);
-    max-height: 300px;
-    resize: none;
-    font-family: var(--font-family);
-    font-size: var(--font-size-normal);
-    color: var(--text-normal);
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 3px;
-    padding: 4px 8px;
-    outline: none;
-    overflow-y: auto;
+	width: 100%;
+	height: var(--textarea-height, var(--min-textarea-height, 200px));
+	max-height: var(--max-textarea-height, var(--min-textarea-height, 300px));
+	resize: none;
+	font-family: var(--font-family);
+	font-size: var(--font-size-normal);
+	color: var(--text-normal);
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 3px;
+	padding: 4px 8px;
+	outline: none;
+	overflow-y: auto;
   }
   textarea.auto-height {
     height: auto;
