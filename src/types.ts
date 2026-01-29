@@ -20,6 +20,8 @@ export interface ISettings {
 	iOSPosition: "bottom" | "right";
 	// Comments box height
 	commentsBoxHeight: number;
+	// Branch color
+	branchColor: string;
 	viewOnly?: boolean;
 	rotated?: boolean;
 }

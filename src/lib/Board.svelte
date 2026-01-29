@@ -72,19 +72,10 @@
     rotated && lastMove ? { from: rotatePos(lastMove.from), to: rotatePos(lastMove.to) } : lastMove,
   );
 
-  // 着法颜色数组 - 统一为橙色
-  const colors = [
-    'rgba(255, 102, 0, 0.8)', // 半透明橙色
-    'rgba(255, 102, 0, 0.8)', // 半透明橙色
-    'rgba(255, 102, 0, 0.8)', // 半透明橙色
-    'rgba(255, 102, 0, 0.8)', // 半透明橙色
-    'rgba(255, 102, 0, 0.8)', // 半透明橙色
-    'rgba(255, 102, 0, 0.8)', // 半透明橙色
-    'rgba(255, 102, 0, 0.8)', // 半透明橙色
-    'rgba(255, 102, 0, 0.8)', // 半透明橙色
-    'rgba(255, 102, 0, 0.8)', // 半透明橙色
-    'rgba(255, 102, 0, 0.8)'  // 半透明橙色
-  ];
+  // 着法颜色数组 - 使用设置中的分支颜色
+  const colors = $derived(
+    Array(10).fill(settings.branchColor)
+  );
 
   function handleClick(e: MouseEvent) {
     const svg = e.currentTarget as SVGSVGElement;

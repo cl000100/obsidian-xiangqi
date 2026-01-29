@@ -370,6 +370,13 @@ function stringifyPGN(root: ChessNode): string {
             result += `${node.data!.ICCS}`;
         }
 
+        // 添加节点注释
+        if (node.comments?.length) {
+            for (const comment of node.comments) {
+                result += ` {${comment}}`;
+            }
+        }
+
         // 分支（兄弟节点）
         const brothers = nodeBrothers.get(node);
         if (brothers?.length) {
@@ -379,6 +386,12 @@ function stringifyPGN(root: ChessNode): string {
                     result += `\n${processTree(brother, stepNum)}`;
                 } else if (brother.side === 'black') {
                     result += `\n${stepNum}. ... ${brother.data!.ICCS}`;
+                    // 添加兄弟节点注释
+                    if (brother.comments?.length) {
+                        for (const comment of brother.comments) {
+                            result += ` {${comment}}`;
+                        }
+                    }
                     if (brother.children[0]) {
                         const next = brother.children[0];
                         const nextStepNum = next.side === 'red' ? stepNum + 1 : stepNum;
@@ -409,6 +422,13 @@ function stringifyPGN(root: ChessNode): string {
                 result += `${currentStepNum}. ${currentNode.data!.ICCS}`;
             } else if (currentNode.side === 'black') {
                 result += `${currentNode.data!.ICCS}`;
+            }
+
+            // 添加节点注释
+            if (currentNode.comments?.length) {
+                for (const comment of currentNode.comments) {
+                    result += ` {${comment}}`;
+                }
             }
 
             if (currentNode.children[0]) {

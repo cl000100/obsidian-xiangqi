@@ -23,6 +23,8 @@ export const DEFAULT_SETTINGS: ISettings = {
 	iOSPosition: "bottom",
 	// Comments box height
 	commentsBoxHeight: 200,
+	// Branch color
+	branchColor: "rgba(0, 255, 0, 0.8)",
 	viewOnly: false,
 	rotated: false,
 };
@@ -381,6 +383,17 @@ export class XQSettingTab extends PluginSettingTab {
 					valueLabel.textContent = value.toString();
 				});
 			});
+
+		new Setting(containerEl)
+			.setName("变招分支颜色")
+			.setDesc("调整变招分支的颜色")
+			.addText((text) =>
+				text.setValue(settings.branchColor).onChange((value) => {
+					settings.branchColor = value;
+					this.plugin.saveSettings();
+					this.plugin.refresh();
+				}),
+			);
 
 		if (window.speechSynthesis) {
 			new Setting(containerEl)
