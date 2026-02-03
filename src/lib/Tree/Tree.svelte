@@ -332,8 +332,8 @@
               <g
                 transform={`scale(${height * 0.06}) translate(-12 -12)`}
                 fill={def.color}
-                stroke="currentColor"
-                stroke-width={height * 0.15}
+                stroke={node.id === currentNode?.id ? "green" : "currentColor"}
+                stroke-width={node.id === currentNode?.id ? height * 0.3 : height * 0.15}
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >

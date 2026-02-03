@@ -196,6 +196,76 @@ const ActionsModule = {
                     host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
                     break;
                 }
+                case 'prevVariation': {
+                    // 找到当前分支的分叉点（有多个子节点的父节点）
+                    let current = host.currentNode;
+                    let foundFork = false;
+                    
+                    while (current.parentID) {
+                        const parentNode = host.nodeMap.get(current.parentID);
+                        if (parentNode && parentNode.children.length > 1) {
+                            // 找到分叉点，切换到该节点
+                            host.currentNode = parentNode;
+                            host.board = host.currentNode.board;
+                            host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
+                            host.updateMainPath();
+                            eventBus.emit('updateUI');
+                            foundFork = true;
+                            break;
+                        }
+                        current = parentNode;
+                    }
+                    
+                    // 如果没有找到分叉点，回到开局（根节点）
+                    if (!foundFork && host.currentNode.parentID) {
+                        host.currentNode = host.root;
+                        host.board = host.currentNode.board;
+                        host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
+                        host.updateMainPath();
+                        eventBus.emit('updateUI');
+                    }
+                    break;
+                }
+                case 'nextVariation': {
+                    // 向下查找分叉点（当前路径上第一个有多个子节点的节点）
+                    let current = host.currentNode;
+                    let foundFork = false;
+                    let lastNode = current;
+                    
+                    while (current) {
+                        // 记录最后一个节点，用于跳到终局
+                        lastNode = current;
+                        
+                        // 如果当前节点是分叉点，且不是起始节点，则切换到该节点
+                        if (current.children.length > 1 && current !== host.currentNode) {
+                            // 找到分叉点，切换到该节点
+                            host.currentNode = current;
+                            host.board = host.currentNode.board;
+                            host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
+                            host.updateMainPath();
+                            eventBus.emit('updateUI');
+                            foundFork = true;
+                            break;
+                        }
+                        
+                        // 沿着主路径向下遍历
+                        if (current.children.length > 0) {
+                            current = current.children[0];
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    // 如果没有找到分叉点，跳到终局（主路径的最后一个节点）
+                    if (!foundFork && lastNode !== host.currentNode) {
+                        host.currentNode = lastNode;
+                        host.board = host.currentNode.board;
+                        host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
+                        host.updateMainPath();
+                        eventBus.emit('updateUI');
+                    }
+                    break;
+                }
                 case 'openPikafish': {
                     // 1. 从 root 节点获取 fen 和 firstturn
                     const initialFen = genFENFromBoard(host.root.board!, host.root.side === 'red' ? 'black' : 'red');
