@@ -298,10 +298,16 @@ const ActionsModule = {
                     // 3. 生成包含分支的 PGN 格式
                     const pgnMoves = stringifyPGN(host.root);
                     
-                    // 4. 构建完整的 PGN 格式
+                    // 4. 获取文件名（安全方式）
+                    let fileName = "残局";
+                    if ((host as any).file) {
+                        fileName = (host as any).file.name.replace(/\.(md|pgn)$/, "");
+                    }
+                    
+                    // 5. 构建完整的 PGN 格式
                     let pgnContent = "[Game \"Chinese Chess\"]\n";
                     pgnContent += "[Event \"\"]\n";
-                    pgnContent += "[Title \"残局\"]\n";
+                    pgnContent += `[Title \"${fileName}\"]\n`;
                     pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
                     pgnContent += "[Round \"\"]\n";
                     pgnContent += "[RedName \"\"]\n";
@@ -341,8 +347,14 @@ const ActionsModule = {
                         }
                     }
 
-                    // 3. 生成中文 PGN 格式
-                    const chinesePgnContent = genChinesePGNFromMoves(board, firstTurn, moves);
+                    // 3. 获取文件名（安全方式）
+                    let fileName = "";
+                    if ((host as any).file) {
+                        fileName = (host as any).file.name.replace(/\.(md|pgn)$/, "");
+                    }
+                    
+                    // 4. 生成中文 PGN 格式
+                    const chinesePgnContent = genChinesePGNFromMoves(board, firstTurn, moves, fileName);
 
                     // 4. 复制到剪贴板
                     navigator.clipboard.writeText(chinesePgnContent).then(() => {
@@ -368,8 +380,14 @@ const ActionsModule = {
                         tags[key] = value;
                     }
 
-                    // 3. 生成 UBB 格式
-                    const ubbContent = genUBBFromMoves(board, firstTurn, [], host.nodeMap, host.currentPath, tags);
+                    // 3. 获取文件名（安全方式）
+                    let fileName = "";
+                    if ((host as any).file) {
+                        fileName = (host as any).file.name.replace(/\.(md|pgn)$/, "");
+                    }
+                    
+                    // 4. 生成 UBB 格式
+                    const ubbContent = genUBBFromMoves(board, firstTurn, [], host.nodeMap, host.currentPath, tags, fileName);
 
                     // 4. 复制到剪贴板
                     navigator.clipboard.writeText(ubbContent).then(() => {

@@ -129,8 +129,14 @@ const ActionsModule = {
             // 2. 获取移动记录
             const moves = host.modified ? host.history : host.PGN;
 
-            // 3. 生成 PGN 格式
-            const pgnContent = genPGNFromMoves(board, firstTurn, moves);
+            // 3. 获取文件名（安全方式）
+            let fileName = "";
+            if ((host as any).file) {
+                fileName = (host as any).file.name.replace(/\.(md|pgn)$/, "");
+            }
+            
+            // 4. 生成 PGN 格式
+            const pgnContent = genPGNFromMoves(board, firstTurn, moves, fileName);
 
             // 4. 复制到剪贴板
             navigator.clipboard.writeText(pgnContent).then(() => {
@@ -148,8 +154,14 @@ const ActionsModule = {
             // 2. 获取移动记录
             const moves = host.modified ? host.history : host.PGN;
 
-            // 3. 生成中文 PGN 格式
-            const chinesePgnContent = genChinesePGNFromMoves(board, firstTurn, moves);
+            // 3. 获取文件名（安全方式）
+            let fileName = "";
+            if ((host as any).file) {
+                fileName = (host as any).file.name.replace(/\.(md|pgn)$/, "");
+            }
+            
+            // 4. 生成中文 PGN 格式
+            const chinesePgnContent = genChinesePGNFromMoves(board, firstTurn, moves, fileName);
 
             // 4. 复制到剪贴板
             navigator.clipboard.writeText(chinesePgnContent).then(() => {
@@ -177,8 +189,14 @@ const ActionsModule = {
                 tags[key] = value;
             }
 
-            // 4. 生成 UBB 格式
-            const ubbContent = genUBBFromMoves(board, firstTurn, moves, undefined, undefined, tags);
+            // 4. 获取文件名（安全方式）
+            let fileName = "";
+            if ((host as any).file) {
+                fileName = (host as any).file.name.replace(/\.(md|pgn)$/, "");
+            }
+            
+            // 5. 生成 UBB 格式
+            const ubbContent = genUBBFromMoves(board, firstTurn, moves, undefined, undefined, tags, fileName);
 
             // 5. 复制到剪贴板
             navigator.clipboard.writeText(ubbContent).then(() => {

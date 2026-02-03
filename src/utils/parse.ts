@@ -509,14 +509,14 @@ function convertFlagToChinese(flag: string): string {
  * @param moves 走法记录
  * @returns PGN 格式的字符串
  */
-export function genPGNFromMoves(board: IBoard, turn: ITurn, moves: IMove[]): string {
+export function genPGNFromMoves(board: IBoard, turn: ITurn, moves: IMove[], fileName?: string): string {
     // 生成FEN值
     const fen = genFENFromBoard(board, turn);
     
     // PGN 格式基本结构
     let pgnContent = "[Game \"Chinese Chess\"]\n";
     pgnContent += "[Event \"\"]\n";
-    pgnContent += "[Title \"残局\"]\n";
+    pgnContent += `[Title \"${fileName || '残局'}\"]\n`;
     pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
     pgnContent += "[Round \"\"]\n";
     pgnContent += "[RedName \"\"]\n";
@@ -622,11 +622,12 @@ export function genUBBFromMoves(
     moves: IMove[],
     nodeMap?: Map<string, any>,
     currentPath?: string[],
-    tags?: Record<string, string>
+    tags?: Record<string, string>,
+    fileName?: string
 ): string {
     const defaultTags: Record<string, string> = {
         Event: "",
-        Title: "残局",
+        Title: fileName || '残局',
         Date: new Date().toISOString().replace('T', ' ').split('.')[0],
         Round: "",
         Red: "",
@@ -853,14 +854,14 @@ export function genUBBFromMoves(
  * @param moves 走法记录
  * @returns 中文 PGN 格式的字符串
  */
-export function genChinesePGNFromMoves(board: IBoard, turn: ITurn, moves: IMove[]): string {
+export function genChinesePGNFromMoves(board: IBoard, turn: ITurn, moves: IMove[], fileName?: string): string {
     // 生成FEN值
     const fen = genFENFromBoard(board, turn);
     
     // PGN 格式基本结构
     let pgnContent = "[Game \"Chinese Chess\"]\n";
     pgnContent += "[Event \"\"]\n";
-    pgnContent += "[Title \"残局\"]\n";
+    pgnContent += `[Title \"${fileName || '残局'}\"]\n`;
     pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
     pgnContent += "[Round \"\"]\n";
     pgnContent += "[RedName \"\"]\n";
