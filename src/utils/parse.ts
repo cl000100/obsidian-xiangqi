@@ -496,6 +496,7 @@ function convertFlagToChinese(flag: string): string {
         "=": "均势",
         "?": "关键",
         "!": "妙手",
+        "?!": "骗着",
         "R#": "红胜",
         "B#": "黑胜"
     };

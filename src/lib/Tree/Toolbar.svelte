@@ -28,6 +28,7 @@
     { title: "均势", icon: "handshake", symbol: "=", event: "annotation" },
     { title: "关键", icon: "bookmark", symbol: "?", event: "annotation" },
     { title: "妙手", icon: "star", symbol: "!", event: "annotation" },
+    { title: "骗着", icon: "alert-circle", symbol: "?!", event: "annotation" },
   ];
 
   function emitEvent(name: string, payload: any = null) {

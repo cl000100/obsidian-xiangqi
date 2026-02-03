@@ -201,10 +201,26 @@ export class PGNParser {
 
     parseComment() {
         const token = this.consume();
-        const comment = token.value
+        let comment = token.value
             .replace(/^{|}$/g, '')
             .replace(/^;/, '')
             .trim();
+
+        // 将中文旗标转换为对应的英文符号
+        const chineseToFlagMap: Record<string, string> = {
+            "优势": "R+",
+            "劣势": "B+",
+            "均势": "=",
+            "关键": "?",
+            "妙手": "!",
+            "骗着": "?!",
+            "红胜": "R#",
+            "黑胜": "B#"
+        };
+
+        if (chineseToFlagMap[comment]) {
+            comment = chineseToFlagMap[comment];
+        }
 
         if (!this.currentNode.comments) {
             this.currentNode.comments = [];

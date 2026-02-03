@@ -81,7 +81,7 @@ const ActionsModule = {
                     }
 
                     // 定义所有可能的批注符号
-                    const ALL_ANNOTATIONS = ["R+", "B+", "=", "?", "!", "R#", "B#"];
+                    const ALL_ANNOTATIONS = ["R+", "B+", "=", "?", "!", "?!", "R#", "B#"];
                     const isClickedDataAnnotation = ALL_ANNOTATIONS.includes(data);
 
                     if (isClickedDataAnnotation) {

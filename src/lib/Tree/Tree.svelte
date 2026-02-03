@@ -83,12 +83,15 @@
   // const lucide_shield_alert = `<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/>`;
   const lucide_bookmark = `<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>`;
   const lucide_star = `<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>`;
+  const lucide_bug = `<path d="M8 2v2.079a4.93 4.93 0 0 1 3 4.554 4.93 4.93 0 0 1-3 4.554V16a2 2 0 0 1 2 2h2a2 2 0 0 1 2-2v-2.813a4.93 4.93 0 0 1 3-4.554 4.93 4.93 0 0 1-3-4.554V2a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2m1 0h2v2H9zm-4 5v6h2V7zm10 0v6h2V7z"/>`;
+  const lucide_alert_circle = `<path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-18c4.418 0 8 3.582 8 8s-3.582 8-8 8-8-3.582-8-8 3.582-8 8-8zm-1 13h2v-2h-2v2zm0-8h2V7h-2v2z"/>`;
   const ANNOTATION_DEFINITIONS: Record<string, { symbol: string; color: string; icon?: string }> = {
     "R+": { symbol: "红优", color: "var(--piece-red)", icon: lucide_thumbs_up },
     "B+": { symbol: "黑优", color: "var(--piece-black)", icon: lucide_thumbs_down },
     "=": { symbol: "均势", color: "green", icon: lucide_handshake },
     "?": { symbol: "问题", color: "var(--text-warning)", icon: lucide_bookmark },
     "!": { symbol: "妙手", color: "var(--color-yellow)", icon: lucide_star },
+    "?!": { symbol: "骗着", color: "var(--color-purple)", icon: lucide_alert_circle },
     "R#": { symbol: "红胜", color: "red", icon: lucide_thumbs_up },
     "B#": { symbol: "黑胜", color: "black", icon: lucide_thumbs_up },
     "=#": { symbol: "和棋", color: "gray", icon: lucide_handshake },
