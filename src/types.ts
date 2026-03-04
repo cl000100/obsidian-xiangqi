@@ -24,6 +24,7 @@ export interface ISettings {
 	branchColor: string;
 	viewOnly?: boolean;
 	rotated?: boolean;
+	showAnnotationsOnBoard?: boolean;
 }
 export type IOptions = {
 	protected?: boolean;

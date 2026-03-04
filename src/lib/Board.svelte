@@ -48,7 +48,7 @@
     rotated && markedPos ? rotatePos(markedPos) : markedPos,
   );
 
-  let { showLastMove, showTurnBorder, showCoordinateLabels } = $derived(settings);
+  let { showLastMove, showTurnBorder, showCoordinateLabels, showAnnotationsOnBoard } = $derived(settings);
   let cellSize = $derived(isIOS() ? settings.iOSCellSize : settings.cellSize);
   let boardMarginTop = $derived(isIOS() ? settings.iOSBoardMarginTop : settings.boardMarginTop);
   let boardMarginBottom = $derived(isIOS() ? settings.iOSBoardMarginBottom : settings.boardMarginBottom);
@@ -256,7 +256,7 @@
                 {PIECE_CHARS[piece as keyof typeof PIECE_CHARS]}
               </text>
               <!-- 旗标显示 -->
-              {#if renderedCurrentMove && renderedCurrentMove.to && renderedCurrentMove.to.x === x && renderedCurrentMove.to.y === y && renderedCurrentMove.comments && renderedCurrentMove.comments.length > 0}
+              {#if showAnnotationsOnBoard && renderedCurrentMove && renderedCurrentMove.to && renderedCurrentMove.to.x === x && renderedCurrentMove.to.y === y && renderedCurrentMove.comments && renderedCurrentMove.comments.length > 0}
                 {#each renderedCurrentMove.comments as comment}
                   <g transform="translate({cellSize * 0.25}, {-cellSize * 0.25})"><!-- 右上角位置 -->
                     <circle

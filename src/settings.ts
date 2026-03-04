@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS: ISettings = {
 	branchColor: "rgba(0, 255, 0, 0.8)",
 	viewOnly: false,
 	rotated: false,
+	showAnnotationsOnBoard: true,
 };
 
 export class XQSettingTab extends PluginSettingTab {
@@ -132,6 +133,16 @@ export class XQSettingTab extends PluginSettingTab {
 			.addToggle((toggle) =>
 				toggle.setValue(settings.showTurnBorder).onChange((value) => {
 					settings.showTurnBorder = value;
+					this.plugin.saveSettings();
+					this.plugin.refresh();
+				}),
+			);
+		new Setting(containerEl)
+			// .setName("是否在棋盘上显示旗标")
+			.setDesc("是否在棋盘棋子上显示旗标标记")
+			.addToggle((toggle) =>
+				toggle.setValue(settings.showAnnotationsOnBoard ?? true).onChange((value) => {
+					settings.showAnnotationsOnBoard = value;
 					this.plugin.saveSettings();
 					this.plugin.refresh();
 				}),
