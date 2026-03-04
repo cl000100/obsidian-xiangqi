@@ -13,6 +13,7 @@
     eventBus: EventBus;
     rotated: boolean;
     variations?: IMove[];
+    currentMove?: IMove | null;
   }
 
   let {
@@ -24,6 +25,7 @@
     eventBus,
     rotated,
     variations = [],
+    currentMove = null,
   }: Props = $props();
 
   let Bnum = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -70,6 +72,10 @@
 
   let renderedLastMove = $derived(
     rotated && lastMove ? { from: rotatePos(lastMove.from), to: rotatePos(lastMove.to) } : lastMove,
+  );
+  
+  let renderedCurrentMove = $derived(
+    rotated && currentMove ? { ...currentMove, to: rotatePos(currentMove.to) } : currentMove,
   );
 
   // 着法颜色数组 - 使用设置中的分支颜色
@@ -249,6 +255,30 @@
               >
                 {PIECE_CHARS[piece as keyof typeof PIECE_CHARS]}
               </text>
+              <!-- 旗标显示 -->
+              {#if renderedCurrentMove && renderedCurrentMove.to && renderedCurrentMove.to.x === x && renderedCurrentMove.to.y === y && renderedCurrentMove.comments && renderedCurrentMove.comments.length > 0}
+                {#each renderedCurrentMove.comments as comment}
+                  <g transform="translate({cellSize * 0.25}, {-cellSize * 0.25})"><!-- 右上角位置 -->
+                    <circle
+                      r={cellSize * 0.15}
+                      fill="var(--color-accent)"
+                      stroke="white"
+                      stroke-width={cellSize * 0.02}
+                    />
+                    <text
+                      x="0"
+                      y="0"
+                      fill="white"
+                      font-size={cellSize * 0.2}
+                      text-anchor="middle"
+                      dominant-baseline="middle"
+                      font-weight="bold"
+                    >
+                      {comment === "?!" ? "骗" : comment === "!" ? "妙" : comment === "?" ? "关" : comment === "R+" ? "优" : comment === "B+" ? "劣" : comment === "=" ? "均" : comment === "R#" ? "红胜" : comment === "B#" ? "黑胜" : comment}
+                    </text>
+                  </g>
+                {/each}
+              {/if}
             </g>
           {/if}
         {/each}

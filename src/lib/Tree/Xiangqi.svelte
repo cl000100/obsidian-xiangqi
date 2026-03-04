@@ -30,6 +30,7 @@
   }: Props = $props();
 
   let lastMove = $derived(currentNode.data);
+  let currentMove = $derived(currentNode.data ? { ...currentNode.data, comments: currentNode.comments } : null);
   let position = $derived(isIOS() ? settings.iOSPosition : settings.position);
   let rotated = $state(false);
   let variations = $derived(
@@ -51,7 +52,7 @@
 </script>
 
 <div class="tree-view {position}">
-    <Board {settings} {board} {lastMove} {markedPos} {currentTurn} {eventBus} {rotated} {variations} />
+    <Board {settings} {board} {lastMove} {markedPos} {currentTurn} {eventBus} {rotated} {variations} {currentMove} />
     <Toolbar {eventBus} />
     <Tree {nodeMap} {eventBus} {currentNode} {currentPath} {settings} />
   </div>

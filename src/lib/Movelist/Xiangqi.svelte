@@ -36,6 +36,7 @@
   }: Props = $props();
 
   let moves = $derived(modified ? history : PGN);
+  let currentMove = $derived(moves[currentStep - 1] || null);
   let isprotected = $derived(options.protected || false);
   let rotated = $derived(options.rotated || false);
 
@@ -46,7 +47,7 @@
 </script>
 
 <div class="XQ-container {(isIOS() ? settings.iOSPosition : settings.position)}">
-  <Board {settings} {board} {lastMove} {markedPos} {currentTurn} {eventBus} {rotated} />
+  <Board {settings} {board} {lastMove} {markedPos} {currentTurn} {eventBus} {rotated} {currentMove} />
   <Toolbar {settings} {eventBus} {modified} {PGN} {isprotected} />
   {#if settings.showMovelist}
     <MoveList {settings} {currentStep} {moves} {eventBus} />
