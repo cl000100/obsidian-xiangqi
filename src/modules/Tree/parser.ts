@@ -157,18 +157,26 @@ export class PGNParser {
     parseVariation() {
         this.consume(); // 消费 '('
 
-        // --- 判断变着应该挂在哪个节点上 ---
-        const variationBase = this.nodeMap.get(this.currentNode.parentID!);
-        const prevState = {
-            node: this.currentNode,
-            step: this.currentStep,
-            side: this.currentSide
-        };
+        // --- 变招解析逻辑 ---
+        // 变招是当前节点的替代着法，应该作为当前节点的兄弟节点
+        // 但因为 processMove 会把新节点添加到 currentNode.children，
+        // 所以我们需要临时把 currentNode 设置为父节点
+        
+        const variationParent = this.nodeMap.get(this.currentNode.parentID!) || this.currentNode;
+        const prevNode = this.currentNode;
+        const prevStep = this.currentStep;
+        const prevSide = this.currentSide;
 
-        // 从 variationBase 开始解析
-        this.currentNode = variationBase!;
-        this.currentStep = this.currentStep - 1;
-        this.currentSide = this.currentSide === 'red' ? 'black' : 'red';
+        // 切换到父节点，这样变招的第一个着法会作为父节点的子节点
+        this.currentNode = variationParent;
+        
+        // 关键：变招是替代当前节点的，所以颜色应该和当前节点相同
+        // 但 currentSide 已经是下一个着法的颜色了（因为 processMove 调用了 switchSide）
+        // 所以需要切换回来
+        this.currentSide = prevSide === 'red' ? 'black' : 'red';
+        // 关键：step 应该减 1，因为变招和原着法是同一步
+        // 例如：解析完 C2-I2 后 currentStep=4，但变招 H0-G2 应该和 C2-I2 一样是 step=3
+        this.currentStep = prevStep - 1;
 
         while (!this.match('right-paren') && !this.match('eof')) {
             if (this.match('iccs-move')) {
@@ -194,9 +202,9 @@ export class PGNParser {
         }
 
         // 恢复主线解析
-        this.currentNode = prevState.node;
-        this.currentStep = prevState.step;
-        this.currentSide = prevState.side;
+        this.currentNode = prevNode;
+        this.currentStep = prevStep;
+        this.currentSide = prevSide;
     }
 
     parseComment() {

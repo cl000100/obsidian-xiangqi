@@ -46,6 +46,19 @@ const TreeMap = {
             host.currentNode = host.nodeMap.get('node-root');
             host.currentTurn = host.currentNode.side === 'black' ? 'black' : 'red';
             host.board = host.currentNode.board;
+            
+            // 初始化 nodeId 为 nodeMap 中最大 ID + 1，确保新节点 ID 不会冲突
+            let maxId = 0;
+            for (const nodeId of host.nodeMap.keys()) {
+                if (nodeId !== 'node-root') {
+                    const numId = parseInt(nodeId.replace('node-', ''));
+                    if (numId > maxId) {
+                        maxId = numId;
+                    }
+                }
+            }
+            host.nodeId = maxId + 1;
+            
             host.updateMainPath();
         });
     }

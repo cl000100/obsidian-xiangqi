@@ -23,9 +23,14 @@ const ActionsModule = {
             const piece = host.currentNode.board![move.from.x][move.from.y];
             move.type = piece;
             move.ICCS = getICCS(move);
-            host.nodeId = host.parser.nodeId
+            
+            // 确保 nodeId 是 nodeMap 中最大的 ID + 1，避免 ID 冲突
+            if (!host.nodeId || host.nodeId <= parseInt(host.currentNode.id.replace('node-', ''))) {
+                host.nodeId = parseInt(host.currentNode.id.replace('node-', '')) + 1;
+            }
+            
             const newNode: ChessNode = {
-                id: `node-${host.parser.nodeId++}`,
+                id: `node-${host.nodeId++}`,
                 data: move,
                 step: host.currentStep,
                 side: host.currentTurn,
@@ -103,6 +108,7 @@ const ActionsModule = {
                         host.currentNode.children = [];
                         host.nodeMap.clear();
                         host.nodeMap.set(host.currentNode.id, host.currentNode)
+                        host.nodeId = 1; // 重置 nodeId
                         eventBus.emit("node-click", host.currentNode.id);
                         break;
 
@@ -125,6 +131,19 @@ const ActionsModule = {
                     }
 
                     deleteSubtree(removeNode);
+                    
+                    // 重新计算 nodeId 为当前 nodeMap 中最大 ID + 1
+                    let maxId = 0;
+                    for (const nodeId of host.nodeMap.keys()) {
+                        if (nodeId !== 'node-root') {
+                            const numId = parseInt(nodeId.replace('node-', ''));
+                            if (numId > maxId) {
+                                maxId = numId;
+                            }
+                        }
+                    }
+                    host.nodeId = maxId + 1;
+                    
                     host.updateMainPath();
                     eventBus.emit("node-click", host.currentNode.id);
                     break;
@@ -470,22 +489,8 @@ function stringifyPGN(root: ChessNode): string {
         if (brothers?.length) {
             for (const brother of brothers) {
                 result += `\n(`;
-                if (brother.side === 'red') {
-                    result += `\n${processTree(brother, stepNum)}`;
-                } else if (brother.side === 'black') {
-                    result += `\n${stepNum}. ... ${brother.data!.ICCS}`;
-                    // 添加兄弟节点注释
-                    if (brother.comments?.length) {
-                        for (const comment of brother.comments) {
-                            result += ` {${comment}}`;
-                        }
-                    }
-                    if (brother.children[0]) {
-                        const next = brother.children[0];
-                        const nextStepNum = next.side === 'red' ? stepNum + 1 : stepNum;
-                        result += `\n${processTree(next, nextStepNum)}`;
-                    }
-                }
+                // 使用 processNode 而不是 processTree，这样才能处理嵌套变招
+                result += `\n${processNode(brother, stepNum)}`;
                 result += `\n)`;
             }
         }
