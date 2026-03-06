@@ -16,7 +16,7 @@
     // { title: "终局", icon: "arrow-right-to-line", event: "toEnd" }, // 隐藏
     { title: "上变", icon: "arrow-up", event: "prevVariation" },
     { title: "下变", icon: "arrow-down", event: "nextVariation" },
-    { title: "翻转", icon: "rotate-ccw", event: "rotate" },
+    { title: "翻转", icon: "flip-vertical", event: "rotate" },
     { title: "分享", icon: "external-link", event: "toggle-share-menu" },
     { title: "标注", icon: "tag", event: "toggle-annotation-menu" },
   ];
