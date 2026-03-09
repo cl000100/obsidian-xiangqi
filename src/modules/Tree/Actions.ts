@@ -417,6 +417,18 @@ const ActionsModule = {
                     });
                     break;
                 }
+                case 'copyFEN': {
+                    const board = host.board!;
+                    const turn = host.currentTurn;
+                    const fen = genFENFromBoard(board, turn === 'red' ? 'black' : 'red');
+                    navigator.clipboard.writeText(fen).then(() => {
+                        new Notice('局面FEN已复制到剪贴板');
+                    }).catch(err => {
+                        console.error('复制失败:', err);
+                        new Notice('复制失败，请手动复制');
+                    });
+                    break;
+                }
             }
 
             eventBus.emit('updateUI')

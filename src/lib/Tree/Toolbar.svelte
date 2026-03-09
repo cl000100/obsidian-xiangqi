@@ -65,6 +65,12 @@
     });
 
     menu.addItem((mi) => {
+      mi.setTitle("局面FEN")
+        .setIcon("copy")
+        .onClick(() => emitEvent("copyFEN"));
+    });
+
+    menu.addItem((mi) => {
       mi.setTitle("变招PGN")
         .setIcon("copy")
         .onClick(() => emitEvent("copyPGN"));
