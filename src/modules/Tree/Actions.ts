@@ -438,18 +438,13 @@ const ActionsModule = {
                     }
                     if (!node.comments) node.comments = [];
                     const color = data;
-                    const existingColorIndex = node.comments.findIndex((c: string) => c.startsWith('flag-'));
+                    const existingColorIndex = node.comments.findIndex((c: string) => c === color);
                     if (existingColorIndex !== -1) {
                         node.comments.splice(existingColorIndex, 1);
+                    } else {
+                        node.comments = node.comments.filter((c: string) => !c.startsWith('flag-'));
+                        node.comments.push(color);
                     }
-                    node.comments.push(color);
-                    break;
-                }
-                case 'removePathColor': {
-                    if (!host.currentNode) break;
-                    const node = host.currentNode;
-                    if (!node.comments) break;
-                    node.comments = node.comments.filter((c: string) => !c.startsWith('flag-'));
                     break;
                 }
                 case 'clearAllPathColor': {

@@ -28,7 +28,6 @@
     { title: "绿色", color: "flag-green", event: "setPathColor" },
     { title: "蓝色", color: "flag-blue", event: "setPathColor" },
     { title: "黄色", color: "flag-yellow", event: "setPathColor" },
-    { title: "删除", color: "delete", event: "removePathColor" },
     { title: "清除", color: "clear", event: "clearAllPathColor" },
   ];
 
