@@ -429,6 +429,37 @@ const ActionsModule = {
                     });
                     break;
                 }
+                case 'setPathColor': {
+                    if (!host.currentNode) break;
+                    const node = host.currentNode;
+                    if (node.children.length > 1) {
+                        new Notice('分叉点无法设置路径颜色，请选择其他节点');
+                        break;
+                    }
+                    if (!node.comments) node.comments = [];
+                    const color = data;
+                    const existingColorIndex = node.comments.findIndex((c: string) => c.startsWith('flag-'));
+                    if (existingColorIndex !== -1) {
+                        node.comments.splice(existingColorIndex, 1);
+                    }
+                    node.comments.push(color);
+                    break;
+                }
+                case 'removePathColor': {
+                    if (!host.currentNode) break;
+                    const node = host.currentNode;
+                    if (!node.comments) break;
+                    node.comments = node.comments.filter((c: string) => !c.startsWith('flag-'));
+                    break;
+                }
+                case 'clearAllPathColor': {
+                    for (const node of host.nodeMap.values()) {
+                        if (node.comments) {
+                            node.comments = node.comments.filter((c: string) => !c.startsWith('flag-'));
+                        }
+                    }
+                    break;
+                }
             }
 
             eventBus.emit('updateUI')

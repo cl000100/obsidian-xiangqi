@@ -19,9 +19,20 @@
     { title: "翻转", icon: "flip-vertical", event: "rotate" },
     { title: "分享", icon: "external-link", event: "toggle-share-menu" },
     { title: "标注", icon: "tag", event: "toggle-annotation-menu" },
+    { title: "路径", icon: "paint-bucket", event: "toggle-pathcolor-menu" },
   ];
 
-  // 你的 annotation 项目 —— 会放进菜单
+  // 路径颜色项目
+  const pathColors = [
+    { title: "红色", color: "flag-red", event: "setPathColor" },
+    { title: "绿色", color: "flag-green", event: "setPathColor" },
+    { title: "蓝色", color: "flag-blue", event: "setPathColor" },
+    { title: "黄色", color: "flag-yellow", event: "setPathColor" },
+    { title: "删除", color: "delete", event: "removePathColor" },
+    { title: "清除", color: "clear", event: "clearAllPathColor" },
+  ];
+
+  // 标注项目
   const annotations = [
     { title: "优势", icon: "thumbs-up", symbol: "R+", event: "annotation" },
     { title: "劣势", icon: "thumbs-down", symbol: "B+", event: "annotation" },
@@ -90,6 +101,20 @@
 
     menu.showAtMouseEvent(evt);
   }
+
+  // 路径颜色菜单
+  function handlePathColorMenu(evt: MouseEvent) {
+    const menu = new Menu();
+
+    pathColors.forEach((item) => {
+      menu.addItem((mi) => {
+        mi.setTitle(item.title)
+          .onClick(() => emitEvent(item.event, item.color));
+      });
+    });
+
+    menu.showAtMouseEvent(evt);
+  }
 </script>
 
 <div class="toolbar-container">
@@ -101,9 +126,11 @@
       use:useSetIcon={icon}
       onclick={(e) => {
         if (event === "toggle-annotation-menu") {
-          handleAnnotationMenu(e); // ← 打开标注菜单
+          handleAnnotationMenu(e);
         } else if (event === "toggle-share-menu") {
-          handleShareMenu(e); // ← 打开分享菜单
+          handleShareMenu(e);
+        } else if (event === "toggle-pathcolor-menu") {
+          handlePathColorMenu(e);
         } else if (event === "rotate") {
           eventBus.emit("rotate");
         } else {

@@ -98,7 +98,49 @@
   }
 
   function getRegularComments(node: ChessNode): string[] {
-    return node.comments?.filter((c) => !ALL_ANNOTATION_KEYS.includes(c)) ?? [];
+    return node.comments?.filter((c) => !ALL_ANNOTATION_KEYS.includes(c) && !c.startsWith("flag-")) ?? [];
+  }
+
+  function getPathColor(node: ChessNode): string | undefined {
+    if (!node.comments) return undefined;
+    return node.comments.find((c) => c.startsWith("flag-"));
+  }
+
+  function findColorStartNode(node: ChessNode, nodeMap: NodeMap): { node: ChessNode | null; color: string | undefined } {
+    let current: ChessNode | undefined = node;
+    while (current) {
+      const color = getPathColor(current);
+      if (color) return { node: current, color };
+      if (!current.parentID) break;
+      current = nodeMap.get(current.parentID);
+    }
+    return { node: null, color: undefined };
+  }
+
+  function isInColoredPath(node: ChessNode, nodeMap: NodeMap): { inPath: boolean; color: string | undefined } {
+    const { node: colorStartNode, color } = findColorStartNode(node, nodeMap);
+    if (!colorStartNode || !color) return { inPath: false, color: undefined };
+    
+    if (colorStartNode.id === node.id) return { inPath: true, color };
+    
+    let current = colorStartNode;
+    while (current && current.children.length > 0) {
+      const nextNode = current.children[0];
+      if (nextNode.id === node.id) return { inPath: true, color };
+      if (nextNode.children.length > 1) break;
+      current = nextNode;
+    }
+    
+    return { inPath: false, color: undefined };
+  }
+
+  function getEdgePathColor(parentNode: ChessNode, childNode: ChessNode, nodeMap: NodeMap): string | undefined {
+    if (parentNode.children.length > 1) return undefined;
+    const parentColor = getPathColor(parentNode);
+    if (parentColor) return parentColor;
+    if (getPathColor(childNode)) return undefined;
+    const { inPath, color } = isInColoredPath(childNode, nodeMap);
+    return inPath ? color : undefined;
   }
 
   let saveTimeout: number | undefined;
@@ -265,19 +307,23 @@
       <g transform={zoomTransform.toString()}>
         {#each renderedNodes as node}
           {#each node.children as child}
+            {@const pathColor = getEdgePathColor(node, child, nodeMap)}
+            {@const isColoredPath = !!pathColor}
             <path
               d={`
               M ${node.x! * spacingX} ${node.y! * spacingY}
               L ${(child.x! - 0.3 * Math.sign(child.x! - node.x!)) * spacingX} ${node.y! * spacingY}
               L ${child.x! * spacingX} ${child.y! * spacingY}
               `}
-              stroke="var(--board-line)"
+              stroke={isColoredPath ? (pathColor === 'flag-red' ? '#ff4444' : pathColor === 'flag-green' ? '#44ff44' : pathColor === 'flag-blue' ? '#4488ff' : pathColor === 'flag-yellow' ? '#ffff44' : 'var(--board-line)') : 'var(--board-line)'}
               stroke-linejoin="round"
               stroke-width={currentPath.includes(node.id) && currentPath.includes(child.id) ? 2 : 1}
               opacity={currentPath.includes(node.id) && currentPath.includes(child.id) ? 1.5 : 0.7}
               filter={currentPath.includes(node.id) && currentPath.includes(child.id)
                 ? "brightness(1.5) saturate(1.4) drop-shadow(0 0 1px rgba(255, 255, 255, 0.6))"
-                : "grayscale(50%) brightness(0.75)"}
+                : isColoredPath
+                  ? "none"
+                  : "grayscale(50%) brightness(0.75)"}
               fill="none"
             />
           {/each}
