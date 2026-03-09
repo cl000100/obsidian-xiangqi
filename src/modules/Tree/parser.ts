@@ -214,7 +214,6 @@ export class PGNParser {
             .replace(/^;/, '')
             .trim();
 
-        // 将中文旗标转换为对应的英文符号
         const chineseToFlagMap: Record<string, string> = {
             "优势": "R+",
             "劣势": "B+",
@@ -223,17 +222,23 @@ export class PGNParser {
             "妙手": "!",
             "骗着": "?!",
             "红胜": "R#",
-            "黑胜": "B#"
+            "黑胜": "B#",
+            "[红线]": "flag-red",
+            "[绿线]": "flag-green",
+            "[蓝线]": "flag-blue",
+            "[黄线]": "flag-yellow"
         };
-
-        if (chineseToFlagMap[comment]) {
-            comment = chineseToFlagMap[comment];
-        }
 
         if (!this.currentNode.comments) {
             this.currentNode.comments = [];
         }
-        this.currentNode.comments.push(comment);
+
+        const parts = comment.split(/\s+/);
+        for (const part of parts) {
+            if (!part) continue;
+            const converted = chineseToFlagMap[part] || part;
+            this.currentNode.comments.push(converted);
+        }
     }
 
     parseResult() {

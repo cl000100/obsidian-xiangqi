@@ -500,7 +500,28 @@ function convertFlagToChinese(flag: string): string {
         "R#": "红胜",
         "B#": "黑胜"
     };
-    return flagMap[flag] || flag;
+    const pathColorMap: Record<string, string> = {
+        "flag-red": "[红线]",
+        "flag-green": "[绿线]",
+        "flag-blue": "[蓝线]",
+        "flag-yellow": "[黄线]"
+    };
+    return pathColorMap[flag] || flagMap[flag] || flag;
+}
+
+/**
+ * 将中文注释转换回旗标标记
+ * @param text 中文注释
+ * @returns 对应的旗标标记
+ */
+function convertChineseToFlag(text: string): string {
+    const chineseToFlag: Record<string, string> = {
+        "[红线]": "flag-red",
+        "[绿线]": "flag-green",
+        "[蓝线]": "flag-blue",
+        "[黄线]": "flag-yellow"
+    };
+    return chineseToFlag[text] || text;
 }
 
 /**
