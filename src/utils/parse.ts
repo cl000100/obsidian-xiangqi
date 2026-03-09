@@ -682,8 +682,8 @@ export function genUBBFromMoves(
             children: []
         };
 
-        for (const childId of root.children) {
-            const childNode = buildTreeFromNodeMap(nodeMap, childId.id);
+        for (const child of root.children) {
+            const childNode = buildTreeFromNodeMap(nodeMap, child.id);
             if (childNode) {
                 node.children.push(childNode);
             }
@@ -715,31 +715,10 @@ export function genUBBFromMoves(
                     const newId = branchCounter;
                     const forkPly = currentPly;
                     
-                    // 为变招添加完整的坐标序列
-                    let varStr = "";
-                    let varCurrent = varNode;
-                    let varPly = forkPly;
+                    // 递归处理变招，返回变招字符串和嵌套变招
+                    const varResult = processVariation(varNode, newId, forkPly);
                     
-                    // 遍历变招的所有着法，确保包含完整的坐标序列
-                    while (varCurrent) {
-                        if (varCurrent.ubbCode) {
-                            varStr += varCurrent.ubbCode;
-                            // 为变招节点添加注释
-                            if (varCurrent.comment) {
-                                allComments.set(`${newId}_${varPly}`, varCurrent.comment);
-                            }
-                        }
-                        
-                        // 移动到下一个节点
-                        if (varCurrent.children.length > 0) {
-                            varCurrent = varCurrent.children[0];
-                            varPly++;
-                        } else {
-                            varCurrent = null;
-                        }
-                    }
-                    
-                    const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${varStr}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
+                    const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${varResult.moves}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
                     ubbTags.push(tag);
                 }
             }
@@ -749,10 +728,61 @@ export function genUBBFromMoves(
         
         return moves.join("");
     }
+    
+    // 处理变招的辅助函数，返回变招的走法和处理嵌套变招
+    function processVariation(varNode: any, branchId: number, startPly: number): { moves: string } {
+        const moves: string[] = [];
+        let varCurrent = varNode;
+        let varPly = startPly;
+        
+        while (varCurrent) {
+            if (varCurrent.ubbCode) {
+                moves.push(varCurrent.ubbCode);
+                if (varCurrent.comment) {
+                    allComments.set(`${branchId}_${varPly}`, varCurrent.comment);
+                }
+            }
+            
+            // 处理变招中的变招（嵌套变招）
+            if (varCurrent.children.length > 1) {
+                for (let i = 1; i < varCurrent.children.length; i++) {
+                    const nestedVarNode = varCurrent.children[i];
+                    branchCounter++;
+                    const newId = branchCounter;
+                    const forkPly = varPly;
+                    
+                    const nestedResult = processVariation(nestedVarNode, newId, forkPly);
+                    
+                    const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${nestedResult.moves}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
+                    ubbTags.push(tag);
+                }
+            }
+            
+            // 移动到下一个节点
+            if (varCurrent.children.length > 0) {
+                varCurrent = varCurrent.children[0];
+                varPly++;
+            } else {
+                varCurrent = null;
+            }
+        }
+        
+        return { moves: moves.join("") };
+    }
 
     let rootNode: any;
     if (nodeMap && nodeMap.size > 0) {
-        const rootId = Array.from(nodeMap.keys())[0];
+        // 找到根节点（parentID 为 null 的节点）
+        let rootId = '';
+        for (const [id, node] of nodeMap.entries()) {
+            if (!node.parentID) {
+                rootId = id;
+                break;
+            }
+        }
+        if (!rootId) {
+            rootId = Array.from(nodeMap.keys())[0];
+        }
         rootNode = buildTreeFromNodeMap(nodeMap, rootId);
     } else {
         rootNode = { moveStr: "", ubbCode: "", comment: "", children: [] };
