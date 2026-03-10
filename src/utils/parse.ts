@@ -699,27 +699,30 @@ export function genUBBFromMoves(
         
         while (current.children.length > 0) {
             const node = current.children[0];
-            currentPly++;
             
-            if (node.ubbCode) {
-                moves.push(node.ubbCode);
-                if (node.comment) {
-                    allComments.set(`${branchId}_${currentPly}`, node.comment);
-                }
-            }
-            
+            // 先检查是否有变招（使用下一个节点的 ply）
             if (current.children.length > 1) {
                 for (let i = 1; i < current.children.length; i++) {
                     const varNode = current.children[i];
                     branchCounter++;
                     const newId = branchCounter;
-                    const forkPly = currentPly;
+                    const forkPly = currentPly + 1;  // 变招第1步的 ply
                     
                     // 递归处理变招，返回变招字符串和嵌套变招
                     const varResult = processVariation(varNode, newId, forkPly);
                     
                     const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${varResult.moves}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
                     ubbTags.push(tag);
+                }
+            }
+            
+            // 处理主干节点
+            currentPly++;
+            
+            if (node.ubbCode) {
+                moves.push(node.ubbCode);
+                if (node.comment) {
+                    allComments.set(`${branchId}_${currentPly}`, node.comment);
                 }
             }
             
@@ -749,19 +752,22 @@ export function genUBBFromMoves(
                     const nestedVarNode = varCurrent.children[i];
                     branchCounter++;
                     const newId = branchCounter;
-                    const forkPly = varPly;
+                    const forkPly = varPly + 1;  // 嵌套变招第1步的 ply
                     
-                    const nestedResult = processVariation(nestedVarNode, newId, forkPly);
+                    console.log(`嵌套变招: branchId=${branchId}, forkPly=${forkPly}, newId=${newId}`);
+                    
+                    // 嵌套变招的 branchId 应始终为 0（主干的 ID）
+                    const nestedResult = processVariation(nestedVarNode, 0, forkPly);
                     
                     const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${nestedResult.moves}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
                     ubbTags.push(tag);
                 }
             }
             
-            // 移动到下一个节点
+            // 移动到下一个节点（先增加 ply，再移动到子节点）
             if (varCurrent.children.length > 0) {
-                varCurrent = varCurrent.children[0];
-                varPly++;
+                varPly++;  // 先增加 ply
+                varCurrent = varCurrent.children[0];  // 再移动到子节点
             } else {
                 varCurrent = null;
             }
