@@ -711,8 +711,10 @@ export function genUBBFromMoves(
                     // 递归处理变招，返回变招字符串和嵌套变招
                     const varResult = processVariation(varNode, newId, forkPly);
                     
-                    const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${varResult.moves}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
-                    ubbTags.push(tag);
+                    if (varResult.moves) {
+                        const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${varResult.moves}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
+                        ubbTags.push(tag);
+                    }
                 }
             }
             
@@ -736,9 +738,11 @@ export function genUBBFromMoves(
     function processVariation(varNode: any, branchId: number, startPly: number): { moves: string } {
         const moves: string[] = [];
         let varCurrent = varNode;
-        let varPly = startPly;
+        // 使用 startPly-1，进入节点时递增，保证首步的 ply = startPly
+        let varPly = startPly - 1;
         
         while (varCurrent) {
+            varPly++; // 进入当前节点的 ply
             if (varCurrent.ubbCode) {
                 moves.push(varCurrent.ubbCode);
                 if (varCurrent.comment) {
@@ -754,19 +758,17 @@ export function genUBBFromMoves(
                     const newId = branchCounter;
                     const forkPly = varPly + 1;  // 嵌套变招第1步的 ply
                     
-                    console.log(`嵌套变招: branchId=${branchId}, forkPly=${forkPly}, newId=${newId}`);
+                    const nestedResult = processVariation(nestedVarNode, newId, forkPly);
                     
-                    // 嵌套变招的 branchId 应始终为 0（主干的 ID）
-                    const nestedResult = processVariation(nestedVarNode, 0, forkPly);
-                    
-                    const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${nestedResult.moves}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
-                    ubbTags.push(tag);
+                    if (nestedResult.moves) {
+                        const tag = `[DhtmlXQ_move_${branchId}_${forkPly}_${newId}]${nestedResult.moves}[/DhtmlXQ_move_${branchId}_${forkPly}_${newId}]`;
+                        ubbTags.push(tag);
+                    }
                 }
             }
             
-            // 移动到下一个节点（先增加 ply，再移动到子节点）
+            // 移动到下一个节点
             if (varCurrent.children.length > 0) {
-                varPly++;  // 先增加 ply
                 varCurrent = varCurrent.children[0];  // 再移动到子节点
             } else {
                 varCurrent = null;
