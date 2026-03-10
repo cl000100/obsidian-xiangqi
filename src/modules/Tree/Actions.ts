@@ -432,10 +432,6 @@ const ActionsModule = {
                 case 'setPathColor': {
                     if (!host.currentNode) break;
                     const node = host.currentNode;
-                    if (node.children.length > 1) {
-                        new Notice('分叉点无法设置路径颜色，请选择其他节点');
-                        break;
-                    }
                     if (!node.comments) node.comments = [];
                     const color = data;
                     const existingColorIndex = node.comments.findIndex((c: string) => c === color);

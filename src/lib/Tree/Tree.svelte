@@ -106,41 +106,151 @@
     return node.comments.find((c) => c.startsWith("flag-"));
   }
 
-  function findColorStartNode(node: ChessNode, nodeMap: NodeMap): { node: ChessNode | null; color: string | undefined } {
-    let current: ChessNode | undefined = node;
-    while (current) {
-      const color = getPathColor(current);
-      if (color) return { node: current, color };
-      if (!current.parentID) break;
-      current = nodeMap.get(current.parentID);
+  // 提取所有路径段（两个分叉点之间，或分叉点到终点）
+  // 分叉点同时属于上一段的终点和下一段的起点，但分叉点的颜色只属于上一段
+  function extractPathSegments(nodeMap: NodeMap): Array<{ nodes: ChessNode[]; startId: string; endId: string }> {
+    const segments: Array<{ nodes: ChessNode[]; startId: string; endId: string }> = [];
+    
+    function dfs(currentId: string, currentPath: ChessNode[]): void {
+      const node = nodeMap.get(currentId);
+      if (!node) return;
+      
+      const newPath = [...currentPath, node];
+      
+      // 判断是否是终点（分叉点或叶子节点）
+      const isFork = node.children.length > 1;
+      const isLeaf = node.children.length === 0;
+      
+      if (isFork || isLeaf) {
+        // 这是一段完整的路径
+        if (newPath.length > 0) {
+          segments.push({
+            nodes: newPath,
+            startId: newPath[0].id,
+            endId: currentId
+          });
+        }
+        
+        // 如果是分叉点，继续处理每个子路径（从分叉点开始，但分叉点的颜色不计入）
+        if (isFork) {
+          for (const child of node.children) {
+            dfs(child.id, [node]);  // 新路径段包含分叉点
+          }
+        }
+      } else {
+        // 继续向下（只有一个子节点）
+        if (node.children.length === 1) {
+          dfs(node.children[0].id, newPath);
+        }
+      }
     }
-    return { node: null, color: undefined };
+    
+    // 从根节点开始
+    const rootId = Array.from(nodeMap.keys()).find(id => {
+      const node = nodeMap.get(id);
+      return node && !node.parentID;
+    });
+    
+    if (rootId) {
+      dfs(rootId, []);
+    }
+    
+    return segments;
   }
 
-  function isInColoredPath(node: ChessNode, nodeMap: NodeMap): { inPath: boolean; color: string | undefined } {
-    const { node: colorStartNode, color } = findColorStartNode(node, nodeMap);
-    if (!colorStartNode || !color) return { inPath: false, color: undefined };
+  // 计算所有边的颜色（基于路径段）
+  function calculateAllEdgeColors(nodeMap: NodeMap): Map<string, string> {
+    const edgeColorMap = new Map<string, string>(); // key: "fromId-toId", value: color
+    const segments = extractPathSegments(nodeMap);
     
-    if (colorStartNode.id === node.id) return { inPath: true, color };
-    
-    let current = colorStartNode;
-    while (current && current.children.length > 0) {
-      const nextNode = current.children[0];
-      if (nextNode.id === node.id) return { inPath: true, color };
-      if (nextNode.children.length > 1) break;
-      current = nextNode;
+    for (const segment of segments) {
+      // 收集该段的所有标记点（按深度顺序，不考虑颜色）
+      // 但是如果节点是分叉点且不是段的终点，则跳过（分叉点的颜色只属于上一段）
+      const markers: Array<{ nodeId: string; color: string; step: number }> = [];
+      for (let i = 0; i < segment.nodes.length; i++) {
+        const node = segment.nodes[i];
+        const isFork = node.children.length > 1;
+        const isEndOfSegment = (i === segment.nodes.length - 1);
+        
+        // 如果节点是分叉点且不是段的终点，跳过它的颜色（属于上一段）
+        if (isFork && !isEndOfSegment) {
+          continue;
+        }
+        
+        const colorComment = getPathColor(node);
+        if (colorComment) {
+          markers.push({
+            nodeId: node.id,
+            color: colorComment,
+            step: node.step || 0
+          });
+        }
+      }
+      
+      // 按 step 排序（深度优先顺序，所有颜色混排）
+      markers.sort((a, b) => a.step - b.step);
+      
+      // 配对处理：按标记顺序配对，不是按颜色配对
+      // 第 1 个和第 2 个配对，第 3 个和第 4 个配对，以此类推
+      for (let i = 0; i < markers.length; i += 2) {
+        const startMarker = markers[i];
+        
+        if (i + 1 < markers.length) {
+          // 成对：第 i 个（奇数位置）到第 i+1 个（偶数位置）
+          // 颜色由第 i 个标记决定
+          const endMarker = markers[i + 1];
+          const pathNodes = getPathBetweenNodes(segment.nodes, startMarker.nodeId, endMarker.nodeId);
+          
+          // 为路径上的每条边设置颜色（由第 i 个标记的颜色决定）
+          for (let j = 0; j < pathNodes.length - 1; j++) {
+            const edgeKey = `${pathNodes[j].id}-${pathNodes[j + 1].id}`;
+            edgeColorMap.set(edgeKey, startMarker.color);
+          }
+        } else {
+          // 最后一个奇数点
+          if (markers.length === 1) {
+            // 只有 1 个点：向上穿透到段起点
+            const startIndex = segment.nodes.findIndex(n => n.id === startMarker.nodeId);
+            for (let j = 0; j < startIndex; j++) {
+              const edgeKey = `${segment.nodes[j].id}-${segment.nodes[j + 1].id}`;
+              edgeColorMap.set(edgeKey, startMarker.color);
+            }
+          } else {
+            // 3 个以上奇数：最后一个向下穿透到段终点
+            const startIndex = segment.nodes.findIndex(n => n.id === startMarker.nodeId);
+            for (let j = startIndex; j < segment.nodes.length - 1; j++) {
+              const edgeKey = `${segment.nodes[j].id}-${segment.nodes[j + 1].id}`;
+              edgeColorMap.set(edgeKey, startMarker.color);
+            }
+          }
+        }
+      }
     }
     
-    return { inPath: false, color: undefined };
+    return edgeColorMap;
   }
+
+  // 获取路径段中两个节点之间的路径
+  function getPathBetweenNodes(nodes: ChessNode[], startId: string, endId: string): ChessNode[] {
+    const startIndex = nodes.findIndex(n => n.id === startId);
+    const endIndex = nodes.findIndex(n => n.id === endId);
+    
+    if (startIndex === -1 || endIndex === -1) return [];
+    
+    const start = Math.min(startIndex, endIndex);
+    const end = Math.max(startIndex, endIndex);
+    
+    return nodes.slice(start, end + 1);
+  }
+
+  // 使用 $derived 缓存边颜色计算结果
+  let edgeColorCache = $derived.by(() => {
+    return calculateAllEdgeColors(nodeMap);
+  });
 
   function getEdgePathColor(parentNode: ChessNode, childNode: ChessNode, nodeMap: NodeMap): string | undefined {
-    if (parentNode.children.length > 1) return undefined;
-    const parentColor = getPathColor(parentNode);
-    if (parentColor) return parentColor;
-    if (getPathColor(childNode)) return undefined;
-    const { inPath, color } = isInColoredPath(childNode, nodeMap);
-    return inPath ? color : undefined;
+    const edgeKey = `${parentNode.id}-${childNode.id}`;
+    return edgeColorCache.get(edgeKey);
   }
 
   let saveTimeout: number | undefined;
