@@ -368,6 +368,47 @@
     setIcon(el, icon);
   }
 
+  function handleTreeKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === "TEXTAREA" || target.tagName === "INPUT")) return;
+
+    let action: string | null = null;
+    switch (e.key) {
+      case "ArrowLeft":
+        action = "back";
+        break;
+      case "ArrowRight":
+        action = "next";
+        break;
+      case "ArrowUp":
+        action = "prevVariation";
+        break;
+      case "ArrowDown":
+        action = "nextVariation";
+        break;
+      default:
+        break;
+    }
+
+    if (action) {
+      e.preventDefault();
+      eventBus.emit("btn-click", { name: action, payload: null });
+      return;
+    }
+
+    // Number keys: switch to a specific branch when current node is a fork.
+    if (currentNode && currentNode.children?.length > 1) {
+      const idx = Number(e.key);
+      if (Number.isInteger(idx) && idx >= 1 && idx <= currentNode.children.length) {
+        e.preventDefault();
+        const targetNode = currentNode.children[idx - 1];
+        if (targetNode) {
+          eventBus.emit("node-click", targetNode.id);
+        }
+      }
+    }
+  }
+
   onMount(() => {
     if (!svgEl) return;
 
@@ -407,7 +448,7 @@
 </script>
 
 <div class="tree-container">
-  <div class="svg-wrapper">
+  <div class="svg-wrapper" tabindex="0" onkeydown={handleTreeKeydown}>
     <svg
       bind:this={svgEl}
       width="100%"
@@ -447,6 +488,14 @@
             opacity={currentPath.includes(node.id) ? 1 : 0.8}
             stroke-width={node.id === currentNode?.id ? height * 0.09 : height * 0.045}
             onclick={() => eventBus.emit("node-click", node.id)}
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                eventBus.emit("node-click", node.id);
+              }
+            }}
+            role="button"
+            tabindex="0"
           >
             <rect
               x={-width / 2}
