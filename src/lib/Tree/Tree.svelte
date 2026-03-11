@@ -77,7 +77,7 @@
   const ANNOTATION_DEFINITIONS: Record<string, { symbol: string; color: string; icon?: string }> = {
     "R+": { symbol: "红优", color: "#ff6fb1", icon: lucide_thumbs_up },
     "B+": { symbol: "黑优", color: "#2ab3ff", icon: lucide_thumbs_down },
-    "=": { symbol: "均势", color: "green", icon: lucide_handshake },
+    "=": { symbol: "均势", color: "#7fe38a", icon: lucide_handshake },
     "?": { symbol: "问题", color: "var(--text-warning)", icon: lucide_bookmark },
     "!": { symbol: "妙手", color: "var(--color-yellow)", icon: lucide_star },
     "?!": { symbol: "骗着", color: "var(--color-purple)", icon: lucide_bow_arrow },
@@ -472,7 +472,7 @@
             {#if primaryAnnotation}
               {@const def = ANNOTATION_DEFINITIONS[primaryAnnotation]}
               <g
-                transform={`translate(${width * 0.3} ${-height * 0.7}) scale(${height * 0.035})`}
+                transform={`translate(${width * 0.3} ${-height * 0.7}) scale(${height * 0.04})`}
                 fill={def.color}
                 stroke="currentColor"
                 stroke-width={height * 0.15}
@@ -484,8 +484,9 @@
             {/if}
 
             {#if getRegularComments(node).length > 0}
+              {@const hasAnnotation = !!primaryAnnotation}
               <g
-                transform={`translate(${0.35 * width} ${-0.7 * height}) scale(${height * 0.035})`}
+                transform={`translate(${hasAnnotation ? 0.1 * width : 0.35 * width} ${-0.7 * height}) scale(${height * 0.03})`}
                 fill="royalblue"
                 stroke="currentColor"
                 stroke-width={height * 0.15}
