@@ -73,14 +73,14 @@
   const lucide_bookmark = `<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>`;
   const lucide_star = `<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>`;
   const lucide_bug = `<path d="M8 2v2.079a4.93 4.93 0 0 1 3 4.554 4.93 4.93 0 0 1-3 4.554V16a2 2 0 0 1 2 2h2a2 2 0 0 1 2-2v-2.813a4.93 4.93 0 0 1 3-4.554 4.93 4.93 0 0 1-3-4.554V2a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2m1 0h2v2H9zm-4 5v6h2V7zm10 0v6h2V7z"/>`;
-  const lucide_alert_circle = `<path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-18c4.418 0 8 3.582 8 8s-3.582 8-8 8-8-3.582-8-8 3.582-8 8-8zm-1 13h2v-2h-2v2zm0-8h2V7h-2v2z"/>`;
+  const lucide_bow_arrow = `<path d="M17 3h4v4"/><path d="M18.575 11.082a13 13 0 0 1 1.048 9.027 1.17 1.17 0 0 1-1.914.597L14 17"/><path d="M7 10 3.29 6.29a1.17 1.17 0 0 1 .6-1.91 13 13 0 0 1 9.03 1.05"/><path d="M7 14a1.7 1.7 0 0 0-1.207.5l-2.646 2.646A.5.5 0 0 0 3.5 18H5a1 1 0 0 1 1 1v1.5a.5.5 0 0 0 .854.354L9.5 18.207A1.7 1.7 0 0 0 10 17v-2a1 1 0 0 0-1-1z"/><path d="M9.707 14.293 21 3"/>`;
   const ANNOTATION_DEFINITIONS: Record<string, { symbol: string; color: string; icon?: string }> = {
-    "R+": { symbol: "红优", color: "var(--piece-red)", icon: lucide_thumbs_up },
-    "B+": { symbol: "黑优", color: "var(--piece-black)", icon: lucide_thumbs_down },
+    "R+": { symbol: "红优", color: "#ff6fb1", icon: lucide_thumbs_up },
+    "B+": { symbol: "黑优", color: "#2ab3ff", icon: lucide_thumbs_down },
     "=": { symbol: "均势", color: "green", icon: lucide_handshake },
     "?": { symbol: "问题", color: "var(--text-warning)", icon: lucide_bookmark },
     "!": { symbol: "妙手", color: "var(--color-yellow)", icon: lucide_star },
-    "?!": { symbol: "骗着", color: "var(--color-purple)", icon: lucide_alert_circle },
+    "?!": { symbol: "骗着", color: "var(--color-purple)", icon: lucide_bow_arrow },
     "R#": { symbol: "红胜", color: "red", icon: lucide_thumbs_up },
     "B#": { symbol: "黑胜", color: "black", icon: lucide_thumbs_up },
     "=#": { symbol: "和棋", color: "gray", icon: lucide_handshake },
@@ -448,39 +448,39 @@
             stroke-width={node.id === currentNode?.id ? height * 0.09 : height * 0.045}
             onclick={() => eventBus.emit("node-click", node.id)}
           >
+            <rect
+              x={-width / 2}
+              y={-height / 2}
+              {width}
+              {height}
+              rx="2.5"
+              ry="2.5"
+              fill={currentPath.includes(node.id) || !node.data
+                ? (node.side === "red"
+                  ? "var(--piece-red)"
+                  : node.side === "black"
+                    ? "var(--piece-black)"
+                    : "green")
+                : "gray"}
+              stroke={node.id === currentNode?.id ? "green" : "var(--board-line)"}
+              stroke-width={node.id === currentNode?.id ? height * 0.18 : height * 0.09}
+            />
+            <text dy={height * 0.32} text-anchor="middle" fill="white" font-size={height * 0.8}>
+              {node.data?.type ? PIECE_CHARS[node.data.type] : "始"}
+            </text>
+
             {#if primaryAnnotation}
               {@const def = ANNOTATION_DEFINITIONS[primaryAnnotation]}
               <g
-                transform={`scale(${height * 0.06}) translate(-12 -12)`}
+                transform={`translate(${width * 0.3} ${-height * 0.7}) scale(${height * 0.035})`}
                 fill={def.color}
-                stroke={node.id === currentNode?.id ? "green" : "currentColor"}
-                stroke-width={node.id === currentNode?.id ? height * 0.3 : height * 0.15}
+                stroke="currentColor"
+                stroke-width={height * 0.15}
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
                 {@html def.icon}
               </g>
-            {:else}
-              <rect
-                x={-width / 2}
-                y={-height / 2}
-                {width}
-                {height}
-                rx="2.5"
-                ry="2.5"
-                fill={currentPath.includes(node.id) || !node.data
-                  ? (node.side === "red"
-                    ? "var(--piece-red)"
-                    : node.side === "black"
-                      ? "var(--piece-black)"
-                      : "green")
-                  : "gray"}
-                stroke={node.id === currentNode?.id ? "green" : "var(--board-line)"}
-                stroke-width={node.id === currentNode?.id ? height * 0.18 : height * 0.09}
-              />
-              <text dy={height * 0.32} text-anchor="middle" fill="white" font-size={height * 0.8}>
-                {node.data?.type ? PIECE_CHARS[node.data.type] : "始"}
-              </text>
             {/if}
 
             {#if getRegularComments(node).length > 0}
