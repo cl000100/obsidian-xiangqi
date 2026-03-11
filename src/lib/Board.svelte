@@ -274,7 +274,19 @@
                       dominant-baseline="middle"
                       font-weight="bold"
                     >
-                      {comment === "?!" ? "骗" : comment === "!" ? "妙" : comment === "?" ? "关" : comment === "R+" ? "优" : comment === "B+" ? "劣" : comment === "=" ? "均" : comment === "R#" ? "红胜" : comment === "B#" ? "黑胜" : comment}
+                      {comment === "flag-red" ? "R"
+                        : comment === "flag-blue" ? "B"
+                          : comment === "flag-yellow" ? "Y"
+                            : comment === "flag-green" ? "G"
+                              : comment === "?!" ? "骗"
+                                : comment === "!" ? "妙"
+                                  : comment === "?" ? "关"
+                                    : comment === "R+" ? "优"
+                                      : comment === "B+" ? "劣"
+                                        : comment === "=" ? "均"
+                                          : comment === "R#" ? "红胜"
+                                            : comment === "B#" ? "黑胜"
+                                              : comment}
                     </text>
                   </g>
                 {/each}
