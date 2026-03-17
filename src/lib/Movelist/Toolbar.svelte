@@ -60,6 +60,12 @@
     });
 
     menu.addItem((mi) => {
+      mi.setTitle("识别开局")
+        .setIcon("search")
+        .onClick(() => emitEvent("identifyOpening"));
+    });
+
+    menu.addItem((mi) => {
       mi.setTitle("变招PGN")
         .setIcon("copy")
         .onClick(() => emitEvent("copyPGN"));
