@@ -72,6 +72,12 @@
     });
 
     menu.addItem((mi) => {
+      mi.setTitle("英文PGN")
+        .setIcon("copy")
+        .onClick(() => emitEvent("copyEnglishPGN"));
+    });
+
+    menu.addItem((mi) => {
       mi.setTitle("UBB格式")
         .setIcon("copy")
         .onClick(() => emitEvent("copyUBB"));

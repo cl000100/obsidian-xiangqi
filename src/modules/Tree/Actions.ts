@@ -417,6 +417,81 @@ const ActionsModule = {
                     });
                     break;
                 }
+                case 'copyEnglishPGN': {
+                    // 1. 获取初始棋盘状态
+                    const board = host.root.board!;
+                    const firstTurn = host.root.side === 'red' ? 'black' : 'red';
+                    
+                    // 2. 生成FEN值
+                    const fen = genFENFromBoard(board, firstTurn);
+                    
+                    // 3. 生成不包含分支的 PGN 格式（基于当前路径）
+                    let pgnMoves = "";
+                    if (host.currentPath.length > 1) {
+                        // 基于当前路径生成PGN
+                        let result = '';
+                        let currentStepNum = 1;
+                        
+                        for (let i = 1; i < host.currentPath.length; i++) {
+                            const nodeId = host.currentPath[i];
+                            const node = host.nodeMap.get(nodeId);
+                            if (node && node.data) {
+                                if (node.side === 'red') {
+                                    result += `${currentStepNum}. ${node.data.ICCS}`;
+                                } else if (node.side === 'black') {
+                                    result += `${node.data.ICCS}`;
+                                }
+                                
+                                // 添加节点注释
+                                if (node.comments?.length) {
+                                    for (const comment of node.comments) {
+                                        result += ` {${comment}}`;
+                                    }
+                                }
+                                
+                                if (i < host.currentPath.length - 1) {
+                                    result += `\n`;
+                                }
+                                
+                                // 更新步数
+                                if (node.side === 'red') {
+                                    currentStepNum++;
+                                }
+                            }
+                        }
+                        
+                        pgnMoves = result;
+                    }
+                    
+                    // 4. 获取文件名（安全方式）
+                    let fileName = "残局";
+                    if ((host as any).file) {
+                        fileName = (host as any).file.name.replace(/\.(md|pgn)$/, "");
+                    }
+                    
+                    // 5. 构建完整的 PGN 格式
+                    let pgnContent = "[Game \"Chinese Chess\"]\n";
+                    pgnContent += "[Event \"\"]\n";
+                    pgnContent += `[Title \"${fileName}\"]\n`;
+                    pgnContent += `[Date \"${new Date().toISOString().split('T')[0]}\"]\n`;
+                    pgnContent += "[Round \"\"]\n";
+                    pgnContent += "[RedName \"\"]\n";
+                    pgnContent += "[BlackName \"\"]\n";
+                    pgnContent += "[Result \"未知\"]\n";
+                    pgnContent += `[FEN \"${fen}\"]\n`;
+                    pgnContent += "[Table \"0\"]\n\n";
+                    pgnContent += pgnMoves;
+                    pgnContent += "\n";
+
+                    // 6. 复制到剪贴板
+                    navigator.clipboard.writeText(pgnContent).then(() => {
+                        new Notice('英文PGN格式已复制到剪贴板');
+                    }).catch(err => {
+                        console.error('复制失败:', err);
+                        new Notice('复制失败，请手动复制');
+                    });
+                    break;
+                }
                 case 'copyFEN': {
                     const board = host.board!;
                     const turn = host.currentTurn;
@@ -461,6 +536,37 @@ const ActionsModule = {
 
 
 registerPGNViewModule('actions', ActionsModule);
+
+function processTree(root: ChessNode, initialStepNum: number): string {
+    let result = '';
+    let currentNode = root;
+    let currentStepNum = initialStepNum;
+
+    while (currentNode) {
+        if (currentNode.side === 'red') {
+            result += `${currentStepNum}. ${currentNode.data!.ICCS}`;
+        } else if (currentNode.side === 'black') {
+            result += `${currentNode.data!.ICCS}`;
+        }
+
+        // 添加节点注释
+        if (currentNode.comments?.length) {
+            for (const comment of currentNode.comments) {
+                result += ` {${comment}}`;
+            }
+        }
+
+        if (currentNode.children[0]) {
+            currentNode = currentNode.children[0];
+            currentStepNum = currentNode.side === 'red' ? currentStepNum + 1 : currentStepNum;
+            result += `\n`;
+        } else {
+            break;
+        }
+    }
+
+    return result;
+}
 
 function stringifyPGN(root: ChessNode): string {
 
@@ -534,37 +640,6 @@ function stringifyPGN(root: ChessNode): string {
             const next = node.children[0];
             const nextStepNum = next.side === 'red' ? stepNum + 1 : stepNum;
             result += `\n${processNode(next, nextStepNum)}`;
-        }
-
-        return result;
-    }
-
-    function processTree(root: ChessNode, initialStepNum: number): string {
-        let result = '';
-        let currentNode = root;
-        let currentStepNum = initialStepNum;
-
-        while (currentNode) {
-            if (currentNode.side === 'red') {
-                result += `${currentStepNum}. ${currentNode.data!.ICCS}`;
-            } else if (currentNode.side === 'black') {
-                result += `${currentNode.data!.ICCS}`;
-            }
-
-            // 添加节点注释
-            if (currentNode.comments?.length) {
-                for (const comment of currentNode.comments) {
-                    result += ` {${comment}}`;
-                }
-            }
-
-            if (currentNode.children[0]) {
-                currentNode = currentNode.children[0];
-                currentStepNum = currentNode.side === 'red' ? currentStepNum + 1 : currentStepNum;
-                result += `\n`;
-            } else {
-                break;
-            }
         }
 
         return result;
