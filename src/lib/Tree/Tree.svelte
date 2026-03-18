@@ -106,6 +106,10 @@
     return node.comments.find((c) => c.startsWith("flag-"));
   }
 
+  function getPathColors(node: ChessNode): string[] {
+    return node.comments?.filter((c) => c.startsWith("flag-")) ?? [];
+  }
+
   // 提取所有路径段（两个分叉点之间，或分叉点到终点）
   // 分叉点同时属于上一段的终点和下一段的起点，但分叉点的颜色只属于上一段
   function extractPathSegments(nodeMap: NodeMap): Array<{ nodes: ChessNode[]; startId: string; endId: string }> {
@@ -283,11 +287,14 @@
     if (!currentNode) return;
     const regularComments = commentsText.split("\n").filter((c) => c.trim() !== "");
     const existingAnnotations = getAllAnnotations(currentNode);
-    currentNode.comments = [...existingAnnotations, ...regularComments];
+    const existingPathColors = getPathColors(currentNode);
+    currentNode.comments = [...existingPathColors, ...existingAnnotations, ...regularComments];
     // 更新nodeMap中的对应节点，确保数据同步
     nodeMap.set(currentNode.id, currentNode);
     // 发送事件通知host更新数据
     eventBus.emit("updateNodeComments", { nodeId: currentNode.id, comments: currentNode.comments });
+    // 触发界面更新，确保图标和棋盘立即显示
+    eventBus.emit("updateUI");
     eventBus.emit("updatePGN", null);
   }
 
