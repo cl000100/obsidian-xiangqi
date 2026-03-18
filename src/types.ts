@@ -32,6 +32,7 @@ export interface ISettings {
 	// Cloud library settings
 	enableCloudLibrary: boolean;
 	cloudLibraryDelay: number;
+	cloudMoveColor: string;
 	viewOnly?: boolean;
 	rotated?: boolean;
 	showAnnotationsOnBoard?: boolean;

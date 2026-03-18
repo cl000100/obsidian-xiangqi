@@ -320,12 +320,20 @@
             <!-- 获取当前着法的颜色 -->
             {@const color = colors[index % colors.length]}
             
+            <!-- 计算线条终点（到达圆圈边缘） -->
+            {@const dx = toX - fromX}
+            {@const dy = toY - fromY}
+            {@const distance = Math.sqrt(dx * dx + dy * dy)}
+            {@const radius = cellSize * 0.35}
+            {@const lineEndX = toX - (dx / distance) * radius}
+            {@const lineEndY = toY - (dy / distance) * radius}
+            
             <!-- 绘制着法线路 -->
             <line
               x1={fromX}
               y1={fromY}
-              x2={toX}
-              y2={toY}
+              x2={lineEndX}
+              y2={lineEndY}
               stroke={color}
               stroke-width={cellSize * 0.08}
               stroke-dasharray={isMainLine ? 'none' : `${cellSize * 0.2} ${cellSize * 0.1}`}
@@ -350,9 +358,10 @@
               fill={color}
               font-size={cellSize * 0.5}
               text-anchor="middle"
-              dominant-baseline="middle"
+              dominant-baseline="central"
               opacity="0.9"
               font-weight="bold"
+              style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
             >
               {index + 1}
             </text>
@@ -410,18 +419,34 @@
             />
             
             <!-- 为着法添加胜率标记 -->
-            <text
-              x={toX}
-              y={toY}
-              fill={settings.cloudMoveColor || "#187C00"}
-              font-size={cellSize * 0.2}
-              text-anchor="middle"
-              dominant-baseline="middle"
-              opacity="0.8"
-              font-weight="bold"
-            >
-              {Math.round(cloudMove.winrate)}%
-            </text>
+            <g transform={`translate(${toX + cellSize * 0.1}, ${toY})`}>
+              <text
+                x="0"
+                y="0"
+                fill={settings.cloudMoveColor || "#187C00"}
+                font-size={cellSize * 0.26}
+                text-anchor="end"
+                dominant-baseline="central"
+                opacity="0.8"
+                font-weight="bold"
+                style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+              >
+                {Math.round(cloudMove.winrate)}
+              </text>
+              <text
+                x="0"
+                y={cellSize * 0.02}
+                fill={settings.cloudMoveColor || "#187C00"}
+                font-size={cellSize * 0.16}
+                text-anchor="start"
+                dominant-baseline="central"
+                opacity="0.8"
+                font-weight="bold"
+                style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+              >
+                %
+              </text>
+            </g>
           {/if}
         {/each}
       </g>
