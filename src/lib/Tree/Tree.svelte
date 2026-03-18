@@ -336,10 +336,14 @@
   }
 
   function panToNodeIfNeeded(node: ChessNode) {
-    if (!node || !svgEl || node.x === undefined || node.y === undefined) return;
+    if (!node || !svgEl || node.x === undefined || node.y === undefined || isNaN(node.x) || isNaN(node.y)) return;
     const { clientWidth, clientHeight } = svgEl;
     const padding = 50;
     let { x: translateX, y: translateY, k: scale } = zoomTransform;
+    
+    // 检查scale是否为NaN
+    if (isNaN(scale)) scale = 1;
+    
     const nodeScreenX = node.x * spacingX * scale + translateX;
     const nodeScreenY = node.y * spacingY * scale + translateY;
 
@@ -354,6 +358,11 @@
       translateX += dx;
       translateY += dy;
     }
+    
+    // 检查translateX和translateY是否为NaN
+    if (isNaN(translateX)) translateX = 0;
+    if (isNaN(translateY)) translateY = 0;
+    
     const t = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
     d3.select(svgEl).transition().duration(300).call(zoomBehavior.transform, t);
   }
