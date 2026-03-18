@@ -22,12 +22,9 @@ const ActionsModule = {
             // 检查是否启用了自动识别
             if (!host.settings?.enableAutoOpeningIdentification) return;
             
-            // 检查是否达到最小识别步数
-            const minMoves = host.settings?.minMovesForIdentification || 4;
-            if (host.currentStep < minMoves) return;
-            
             // 生成当前路径的PGN，用于缓存判断
             let currentPGN = "";
+            let currentPathLength = 0;
             if (host.currentNode && host.currentNode.id !== 'node-root') {
                 // 构建从根节点到当前选中节点的路径
                 let currentNode = host.currentNode;
@@ -42,6 +39,13 @@ const ActionsModule = {
                         break;
                     }
                 }
+                
+                // 计算当前路径的实际步数
+                currentPathLength = pathNodes.length - 1; // 减去根节点
+                
+                // 检查是否达到最小识别步数
+                const minMoves = host.settings?.minMovesForIdentification || 4;
+                if (currentPathLength < minMoves) return;
                 
                 // 生成PGN
                 let result = '';
@@ -257,6 +261,12 @@ const ActionsModule = {
             host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
             host.updateMainPath();
             host.eventBus.emit('updateUI');
+            // 自动识别开局（防抖处理）
+            const delay = host.settings?.autoIdentificationDelay || 500;
+            if (identificationTimeout) {
+                clearTimeout(identificationTimeout);
+            }
+            identificationTimeout = window.setTimeout(autoIdentifyOpening, delay);
             // 获取云库着法（防抖处理）
             const cloudDelay = host.settings?.cloudLibraryDelay || 300;
             if (cloudLibraryTimeout) {
@@ -709,9 +719,11 @@ const ActionsModule = {
                     // 提取auto参数，标记是否为自动识别
                     const isAuto = data?.auto || false;
                     
-                    // 1. 生成当前路径的英文PGN（从根节点到当前选中节点）
-                    let pgnText = "";
-                    if (host.currentNode && host.currentNode.id !== 'node-root') {
+                    // 1. 使用传递过来的PGN（如果有），否则生成当前路径的英文PGN
+                    let pgnText = data?.pgn || "";
+                    
+                    // 如果没有传递PGN，则生成
+                    if (!pgnText && host.currentNode && host.currentNode.id !== 'node-root') {
                         // 构建从根节点到当前选中节点的路径
                         let currentNode = host.currentNode;
                         const pathNodes = [];
