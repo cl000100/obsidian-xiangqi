@@ -556,17 +556,48 @@ const ActionsModule = {
                         break;
                     }
                     
-                    new Notice('🔍 正在通过 NAS API 识别开局...');
-                    
-                    // 3. 发起异步请求
+                    // 3. 发起并行请求
                     (async () => {
                         try {
-                            const response = await requestUrl({
-                                url: 'http://192.168.50.159:5050/api/identify',
-                                method: 'POST',
-                                contentType: 'application/json',
-                                body: JSON.stringify({ pgn_text: pgnText })
-                            });
+                            // 获取配置的NAS地址
+                            const nasAddress1 = host.settings?.nasAddress1 || 'http://192.168.50.159:5050/api/identify';
+                            const nasAddress2 = host.settings?.nasAddress2 || '';
+                            
+                            // 构建请求函数
+                            const createRequest = (url: string) => {
+                                return requestUrl({
+                                    url: url,
+                                    method: 'POST',
+                                    contentType: 'application/json',
+                                    body: JSON.stringify({ pgn_text: pgnText })
+                                });
+                            };
+                            
+                            // 准备请求数组
+                            const requests: Promise<any>[] = [createRequest(nasAddress1)];
+                            if (nasAddress2) {
+                                requests.push(createRequest(nasAddress2));
+                            }
+                            
+                            // 并行发送请求，使用Promise.race获取第一个完成的结果
+                            let response;
+                            if (requests.length > 1) {
+                                // 处理多个请求的情况，确保即使一个失败也能返回另一个的结果
+                                response = await Promise.race(requests.map(promise => 
+                                    promise.catch(err => {
+                                        // 单个请求失败，返回一个永远不会解析的值，让其他请求有机会完成
+                                        return new Promise(() => {});
+                                    })
+                                ));
+                                
+                                // 检查是否所有请求都失败了
+                                if (!response) {
+                                    throw new Error('所有NAS地址都无法连接');
+                                }
+                            } else {
+                                // 只有一个请求的情况
+                                response = await createRequest(nasAddress1);
+                            }
                             
                             const res = response.json;
                             if (res.success) {
@@ -592,7 +623,7 @@ const ActionsModule = {
                                     }
                                     
                                     // 移除已有的开局识别备注
-                                    targetNode.comments = targetNode.comments.filter(comment => !comment.startsWith('开局：') && !comment.startsWith('分支：'));
+                                    targetNode.comments = targetNode.comments.filter((comment: string) => !comment.startsWith('开局：') && !comment.startsWith('分支：'));
                                     
                                     // 添加新的开局识别备注
                                     targetNode.comments.push(`开局：${res.opening}（${res.ecco}）`);

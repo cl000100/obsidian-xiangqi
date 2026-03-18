@@ -432,7 +432,11 @@
       return;
     }
 
-    const node = currentNode;
+    // 监听 nodeMap 的变化，确保注释更新后能立即显示
+    nodeMap.size;
+    
+    // 从 nodeMap 中获取最新的节点数据
+    const node = nodeMap.get(currentNode.id) || currentNode;
     commentsText = getRegularComments(node).join("\n");
 
     tick().then(() => {

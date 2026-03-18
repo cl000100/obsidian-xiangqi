@@ -25,6 +25,9 @@ export const DEFAULT_SETTINGS: ISettings = {
 	commentsBoxHeight: 200,
 	// Branch color
 	branchColor: "rgba(0, 255, 0, 0.8)",
+	// NAS settings for opening identification
+	nasAddress1: "http://192.168.50.159:5050/api/identify",
+	nasAddress2: "",
 	viewOnly: false,
 	rotated: false,
 	showAnnotationsOnBoard: true,
@@ -417,6 +420,28 @@ export class XQSettingTab extends PluginSettingTab {
 					}),
 				);
 		}
+
+		new Setting(containerEl).setName("开局识别NAS设置").setHeading();
+
+		new Setting(containerEl)
+			.setName("NAS地址1")
+			.setDesc("第一个NAS局域网地址，用于开局识别")
+			.addText((text) =>
+				text.setValue(settings.nasAddress1).onChange((value) => {
+					settings.nasAddress1 = value;
+					this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName("NAS地址2")
+			.setDesc("第二个NAS局域网地址，当第一个地址不可用时使用")
+			.addText((text) =>
+				text.setValue(settings.nasAddress2).onChange((value) => {
+					settings.nasAddress2 = value;
+					this.plugin.saveSettings();
+				}),
+			);
 	}
 	async hide() {
 		this.plugin.refresh();

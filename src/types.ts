@@ -22,6 +22,9 @@ export interface ISettings {
 	commentsBoxHeight: number;
 	// Branch color
 	branchColor: string;
+	// NAS settings for opening identification
+	nasAddress1: string;
+	nasAddress2: string;
 	viewOnly?: boolean;
 	rotated?: boolean;
 	showAnnotationsOnBoard?: boolean;
