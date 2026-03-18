@@ -64,74 +64,23 @@
     return { x: 8 - pos.x, y: 9 - pos.y };
   }
   
-  // 为重叠的着法添加颜色偏移
-  function adjustColor(baseColor: string, index: number): string {
-    // 解析基础颜色
-    let r = 0, g = 0, b = 0;
-    if (baseColor.startsWith('#')) {
-      // 处理十六进制颜色
-      const hex = baseColor.slice(1);
-      r = parseInt(hex.slice(0, 2), 16);
-      g = parseInt(hex.slice(2, 4), 16);
-      b = parseInt(hex.slice(4, 6), 16);
+  // 为云库着法生成颜色，确保在深色背景下清晰可见，并且与用户分支颜色区分
+    function adjustColor(baseColor: string, index: number): string {
+      // 预定义一组在深色背景下清晰可见的颜色，避免深蓝色、绿色和薄荷绿，防止与用户分支撞色
+      const predefinedColors = [
+        '#FF6B35', // 橙色
+        '#FFD23F', // 黄色
+        '#4ECDC4', // 青色
+        '#9B5DE5', // 紫色
+        '#F15BB5', // 粉色
+        '#00BBF9', // 浅蓝色
+        '#FF9E00', // 深橙色
+        '#C77DFF'  // 浅紫色
+      ];
+      
+      // 循环使用预定义颜色
+      return predefinedColors[index % predefinedColors.length];
     }
-    
-    // 根据索引生成颜色偏移，增加偏移幅度使颜色差异更明显
-    const hueOffset = (index * 90) % 360;
-    
-    // 将RGB转换为HSL
-    let h = 0, s = 0, l = 0;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    l = (max + min) / 2;
-    
-    if (max === min) {
-      h = 0;
-      s = 0; // 灰色
-    } else {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      h /= 6;
-    }
-    
-    // 应用色相偏移
-    h = (h + hueOffset / 360) % 1;
-    
-    // 将HSL转换回RGB
-    function hslToRgb(h: number, s: number, l: number) {
-      let r, g, b;
-      if (s === 0) {
-        r = g = b = l; // 灰色
-      } else {
-        const hue2rgb = (p: number, q: number, t: number) => {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
-        };
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1/3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
-      }
-      return {
-        r: Math.round(r * 255),
-        g: Math.round(g * 255),
-        b: Math.round(b * 255)
-      };
-    }
-    
-    const rgb = hslToRgb(h, s, l);
-    return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-  }
   
   // 线段交叉检测函数
   function doLineSegmentsIntersect(p1: {x: number, y: number}, p2: {x: number, y: number}, p3: {x: number, y: number}, p4: {x: number, y: number}) {
@@ -381,6 +330,69 @@
 
     <!-- 分支线路 -->
     {#if variations && variations.length > 1}
+      <!-- 按位置分组着法 -->
+      {@const movesByPosition = variations.filter(m => m.from && m.to).reduce((acc, move) => {
+        const to = rotated ? rotatePos(move.to) : move.to;
+        const positionKey = `${to.x},${to.y}`;
+        if (!acc[positionKey]) {
+          acc[positionKey] = [];
+        }
+        acc[positionKey].push(move);
+        return acc;
+      }, {} as Record<string, typeof variations>)}
+      <!-- 按起点分组着法 -->
+      {@const movesByStartPosition = variations.filter(m => m.from && m.to).reduce((acc, move) => {
+        const from = rotated ? rotatePos(move.from) : move.from;
+        const startKey = `${from.x},${from.y}`;
+        if (!acc[startKey]) {
+          acc[startKey] = [];
+        }
+        acc[startKey].push(move);
+        return acc;
+      }, {} as Record<string, typeof variations>)}
+      <!-- 检测路线交叉 -->
+      {@const movesWithIntersections = variations.filter((move, index) => {
+        if (!move.from || !move.to) return false;
+        const from = rotated ? rotatePos(move.from) : move.from;
+        const to = rotated ? rotatePos(move.to) : move.to;
+        const p1 = {x: (from.x + 1) * cellSize, y: (from.y + 1) * cellSize};
+        const p2 = {x: (to.x + 1) * cellSize, y: (to.y + 1) * cellSize};
+        
+        // 检查与之前的着法是否交叉，或路径经过其他着法的终点
+        for (let i = 0; i < index; i++) {
+          const otherMove = variations[i];
+          if (!otherMove.from || !otherMove.to) continue;
+          const otherFrom = rotated ? rotatePos(otherMove.from) : otherMove.from;
+          const otherTo = rotated ? rotatePos(otherMove.to) : otherMove.to;
+          const p3 = {x: (otherFrom.x + 1) * cellSize, y: (otherFrom.y + 1) * cellSize};
+          const p4 = {x: (otherTo.x + 1) * cellSize, y: (otherTo.y + 1) * cellSize};
+          
+          // 检查线路交叉
+          if (doLineSegmentsIntersect(p1, p2, p3, p4)) {
+            return true;
+          }
+          
+          // 检查当前着法的路径是否经过其他着法的终点
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const otherToPoint = p4;
+          
+          // 计算其他着法终点到当前着法线路的距离
+          const t = ((otherToPoint.x - p1.x) * dx + (otherToPoint.y - p1.y) * dy) / (distance * distance);
+          const tClamped = Math.max(0, Math.min(1, t));
+          const closestX = p1.x + tClamped * dx;
+          const closestY = p1.y + tClamped * dy;
+          const distToLine = Math.sqrt((otherToPoint.x - closestX) ** 2 + (otherToPoint.y - closestY) ** 2);
+          
+          // 如果距离小于一个棋子的大小，认为路径经过该终点
+          if (distToLine < cellSize * 0.5) {
+            return true;
+          }
+        }
+        return false;
+      })}
+      
       <g id="variations">
         {#each variations as variation, index}
           <!-- 计算变着的起点和终点 -->
@@ -398,6 +410,24 @@
             <!-- 获取当前着法的颜色 -->
             {@const color = colors[index % colors.length]}
             
+            <!-- 检查是否有重叠的着法 -->
+            {@const positionKey = `${to.x},${to.y}`}
+            {@const positionMoves = movesByPosition[positionKey] || []}
+            {@const hasEndOverlap = positionMoves.length > 1}
+            
+            <!-- 检查是否有相同起点的着法（线重叠） -->
+            {@const startKey = `${from.x},${from.y}`}
+            {@const startMoves = movesByStartPosition[startKey] || []}
+            {@const hasStartOverlap = startMoves.length > 1}
+            <!-- 计算当前着法在起点分组中的索引 -->
+            {@const startIndex = startMoves.indexOf(variation)}
+            
+            <!-- 检查是否有路线交叉 -->
+            {@const hasIntersection = movesWithIntersections.includes(variation)}
+            
+            <!-- 综合判断是否有重叠或交叉 -->
+            {@const hasOverlap = hasEndOverlap || hasIntersection}
+            
             <!-- 计算线条终点（到达圆圈边缘） -->
             {@const dx = toX - fromX}
             {@const dy = toY - fromY}
@@ -406,43 +436,129 @@
             {@const lineEndX = toX - (dx / distance) * radius}
             {@const lineEndY = toY - (dy / distance) * radius}
             
-            <!-- 绘制着法线路 -->
-            <line
-              x1={fromX}
-              y1={fromY}
-              x2={lineEndX}
-              y2={lineEndY}
-              stroke={color}
-              stroke-width={cellSize * 0.08}
-              stroke-dasharray={isMainLine ? 'none' : `${cellSize * 0.2} ${cellSize * 0.1}`}
-              opacity={0.7}
-              stroke-linecap="round"
-            />
-            <!-- 绘制着法终点标记 -->
-            <circle
-              cx={toX}
-              cy={toY}
-              r={cellSize * 0.35}
-              stroke={color}
-              stroke-width={cellSize * 0.08}
-              fill="none"
-              opacity={0.7}
-            />
+            <!-- 计算标签文本的对齐方式 -->
+            {@const textAnchor = dx > 0 ? 'start' : dx < 0 ? 'end' : 'middle'}
+            {@const dominantBaseline = dy > 0 ? 'hanging' : dy < 0 ? 'baseline' : 'central'}
             
-            <!-- 为着法添加数字标记 -->
-            <text
-              x={toX}
-              y={toY}
-              fill={color}
-              font-size={cellSize * 0.5}
-              text-anchor="middle"
-              dominant-baseline="central"
-              opacity="0.9"
-              font-weight="bold"
-              style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
-            >
-              {index + 1}
-            </text>
+            {#if (hasOverlap && !isMainLine) || hasIntersection || hasStartOverlap}
+              <!-- 有重叠且不是主线路，或路线交叉的着法，或起点相同的着法，使用弧线绘制 -->
+              <!-- 计算弧线参数 -->
+              {@const angle = Math.atan2(dy, dx)}
+              <!-- 为起点相同的着法生成不同的弧线半径和方向 -->
+              {@const arcRadius = hasStartOverlap ? Math.max(cellSize * 2, distance / 2) + (startIndex * cellSize) : Math.max(cellSize * 2, distance / 2)}
+              {@const sweepFlag = hasStartOverlap && startIndex % 2 === 1 ? 0 : 1} <!-- 交替弧线方向 -->
+              {@const arcCenterX = toX - Math.cos(angle) * arcRadius}
+              {@const arcCenterY = toY - Math.sin(angle) * arcRadius}
+              {@const startAngle = angle + Math.PI}
+              {@const endAngle = angle}
+              {@const largeArcFlag = 0}
+              
+              <!-- 绘制弧线 -->
+              <path
+                d={`M ${fromX} ${fromY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} ${sweepFlag} ${lineEndX} ${lineEndY}`}
+                stroke={color}
+                stroke-width={cellSize * 0.08}
+                stroke-dasharray={isMainLine ? 'none' : `${cellSize * 0.2} ${cellSize * 0.1}`}
+                opacity={0.7}
+                fill="none"
+                stroke-linecap="round"
+              />
+              
+              <!-- 绘制着法终点标记 -->
+              <circle
+                cx={toX}
+                cy={toY}
+                r={cellSize * 0.35}
+                stroke={color}
+                stroke-width={cellSize * 0.08}
+                fill="none"
+                opacity={0.7}
+              />
+              
+              {#if hasEndOverlap && !isMainLine}
+                <!-- 只有终点有重叠且不是主线路的着法，才偏移标签 -->
+                <!-- 朝向起点方向偏移标签 -->
+                {@const overlapOffset = cellSize * 0.3}
+                {@const overlapLabelX = toX - (dx / distance) * overlapOffset}
+                {@const overlapLabelY = toY - (dy / distance) * overlapOffset}
+                
+                <!-- 为着法添加数字标记（沿着来源方向偏移） -->
+                <g transform={`translate(${overlapLabelX}, ${overlapLabelY})`}>
+                  <text
+                    x="0"
+                    y="0"
+                    fill={color}
+                    font-size={cellSize * 0.5}
+                    text-anchor="end"
+                    dominant-baseline="central"
+                    opacity="0.9"
+                    font-weight="bold"
+                    style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                  >
+                    {index + 1}
+                  </text>
+                </g>
+              {:else}
+                <!-- 终点没有重叠，标签不偏移，放在圆圈里 -->
+                <!-- 为着法添加数字标记（在圆圈里，不偏移） -->
+                <g transform={`translate(${toX}, ${toY})`}>
+                  <text
+                    x="0"
+                    y="0"
+                    fill={color}
+                    font-size={cellSize * 0.5}
+                    text-anchor="middle"
+                    dominant-baseline="central"
+                    opacity="0.9"
+                    font-weight="bold"
+                    style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                  >
+                    {index + 1}
+                  </text>
+                </g>
+              {/if}
+            {:else}
+              <!-- 没有重叠或主线路，使用直线绘制，标签放在圆圈里 -->
+              <!-- 绘制着法线路 -->
+              <line
+                x1={fromX}
+                y1={fromY}
+                x2={lineEndX}
+                y2={lineEndY}
+                stroke={color}
+                stroke-width={cellSize * 0.08}
+                stroke-dasharray={isMainLine ? 'none' : `${cellSize * 0.2} ${cellSize * 0.1}`}
+                opacity={0.7}
+                stroke-linecap="round"
+              />
+              <!-- 绘制着法终点标记 -->
+              <circle
+                cx={toX}
+                cy={toY}
+                r={cellSize * 0.35}
+                stroke={color}
+                stroke-width={cellSize * 0.08}
+                fill="none"
+                opacity={0.7}
+              />
+              
+              <!-- 为着法添加数字标记（在圆圈里，不偏移） -->
+              <g transform={`translate(${toX}, ${toY})`}>
+                <text
+                  x="0"
+                  y="0"
+                  fill={color}
+                  font-size={cellSize * 0.5}
+                  text-anchor="middle"
+                  dominant-baseline="central"
+                  opacity="0.9"
+                  font-weight="bold"
+                  style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                >
+                  {index + 1}
+                </text>
+              </g>
+            {/if}
           {/if}
         {/each}
       </g>
@@ -471,7 +587,7 @@
         }
         acc[startKey].push(move);
         return acc;
-      }, {} as Record<string, typeof displayMoves>)}      
+      }, {} as Record<string, typeof displayMoves>)}
       <!-- 检测路线交叉 -->
       {@const movesWithIntersections = displayMoves.filter((move, index) => {
         if (!move.from || !move.to) return false;
@@ -480,7 +596,7 @@
         const p1 = {x: (from.x + 1) * cellSize, y: (from.y + 1) * cellSize};
         const p2 = {x: (to.x + 1) * cellSize, y: (to.y + 1) * cellSize};
         
-        // 检查与之前的着法是否交叉
+        // 检查与之前的着法是否交叉，或路径经过其他着法的终点
         for (let i = 0; i < index; i++) {
           const otherMove = displayMoves[i];
           if (!otherMove.from || !otherMove.to) continue;
@@ -489,12 +605,47 @@
           const p3 = {x: (otherFrom.x + 1) * cellSize, y: (otherFrom.y + 1) * cellSize};
           const p4 = {x: (otherTo.x + 1) * cellSize, y: (otherTo.y + 1) * cellSize};
           
+          // 检查线路交叉
           if (doLineSegmentsIntersect(p1, p2, p3, p4)) {
+            return true;
+          }
+          
+          // 检查当前着法的路径是否经过其他着法的终点
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const otherToPoint = p4;
+          
+          // 计算其他着法终点到当前着法线路的距离
+          const t = ((otherToPoint.x - p1.x) * dx + (otherToPoint.y - p1.y) * dy) / (distance * distance);
+          const tClamped = Math.max(0, Math.min(1, t));
+          const closestX = p1.x + tClamped * dx;
+          const closestY = p1.y + tClamped * dy;
+          const distToLine = Math.sqrt((otherToPoint.x - closestX) ** 2 + (otherToPoint.y - closestY) ** 2);
+          
+          // 如果距离小于一个棋子的大小，认为路径经过该终点
+          if (distToLine < cellSize * 0.5) {
             return true;
           }
         }
         return false;
       })}
+      <!-- 检查云库着法是否与用户分支重合 -->
+      {@const isCloudMoveOverlapsWithVariation = (cloudMove: ICloudMove): boolean => {
+        // 只有当用户分支数量大于1时，才隐藏云库分支的线条和圆圈
+        // 这样当用户只有一步棋时，云库分支不会孤零零的只有胜率
+        if (!cloudMove.from || !cloudMove.to || !variations || variations.length <= 1) return false;
+        
+        const cloudFrom = rotated ? rotatePos(cloudMove.from) : cloudMove.from;
+        const cloudTo = rotated ? rotatePos(cloudMove.to) : cloudMove.to;
+        
+        return variations.some(variation => {
+          if (!variation.from || !variation.to) return false;
+          const varFrom = rotated ? rotatePos(variation.from) : variation.from;
+          const varTo = rotated ? rotatePos(variation.to) : variation.to;
+          return cloudFrom.x === varFrom.x && cloudFrom.y === varFrom.y && cloudTo.x === varTo.x && cloudTo.y === varTo.y;
+        });
+      }}
       
       <g id="cloud-variations">
         {#each displayMoves.filter((move, idx, arr) => {
@@ -516,6 +667,9 @@
             {@const fromY = (from.y + 1) * cellSize}
             {@const toX = (to.x + 1) * cellSize}
             {@const toY = (to.y + 1) * cellSize}
+            
+            <!-- 检查是否与用户分支重合 -->
+            {@const overlapsWithVariation = isCloudMoveOverlapsWithVariation(cloudMove)}
             
             <!-- 检查是否有重叠的着法 -->
             {@const positionKey = `${to.x},${to.y}`}
@@ -562,7 +716,25 @@
             {@const textAnchor = dx > 0 ? 'start' : dx < 0 ? 'end' : 'middle'}
             {@const dominantBaseline = dy > 0 ? 'hanging' : dy < 0 ? 'baseline' : 'central'}
             
-            {#if (hasEndOverlap && !isBestMove) || hasIntersection || hasStartOverlap}
+            {#if overlapsWithVariation}
+              <!-- 与用户分支重合，只显示胜率，不显示线条和圆圈 -->
+              <!-- 为着法添加胜率标记（在圆圈里，不偏移） -->
+              <g transform={`translate(${toX}, ${toY})`}>
+                <text
+                  x="0"
+                  y="0"
+                  fill={adjustedColor}
+                  font-size={cellSize * 0.26}
+                  text-anchor="middle"
+                  dominant-baseline="central"
+                  opacity="0.8"
+                  font-weight="bold"
+                  style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                >
+                  {Math.round(cloudMove.winrate)}
+                </text>
+              </g>
+            {:else if (hasEndOverlap && !isBestMove) || hasIntersection || hasStartOverlap}
               <!-- 有终点重叠且不是胜率最高的，或路线交叉的着法，或起点相同的着法，使用弧线绘制，并沿着来源方向偏移标签 -->
               <!-- 计算弧线参数 -->
               {@const angle = Math.atan2(dy, dx)}

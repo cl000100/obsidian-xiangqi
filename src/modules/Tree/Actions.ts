@@ -79,22 +79,15 @@ const ActionsModule = {
 
         // 解析云库着法信息
         function parseCloudMoves(response: string): ICloudMove[] {
-            console.log('云库API响应:', response);
-            
             if (response === 'unknown' || response === 'invalid board' || response === 'checkmate' || response === 'stalemate') {
-                console.log('API返回特殊值，返回空数组');
                 return [];
             }
             
             const moves = response.split('|');
-            console.log('分割后的着法数组:', moves);
             
             const result = moves.map(moveStr => {
-                console.log('解析单个着法:', moveStr);
-                
                 const parts = moveStr.split(',');
                 if (parts.length < 4) {
-                    console.log('着法字段不足4个，跳过:', parts);
                     return null;
                 }
                 
@@ -107,20 +100,17 @@ const ActionsModule = {
                 let hasWinrate = false;
                 
                 for (const part of parts) {
-                    console.log('解析字段:', part);
                     const [key, value] = part.split(':');
-                    console.log('字段键值:', key, value);
+                    if (!key || !value) continue;
                     
                     if (key === 'move') move = value;
                     else if (key === 'score') {
                         score = parseInt(value) || 0;
-                        console.log('解析score:', score);
                     }
                     else if (key === 'rank') rank = parseInt(value) || 0;
                     else if (key === 'winrate') {
                         const parsedWinrate = parseFloat(value);
                         winrate = isNaN(parsedWinrate) ? 0 : parsedWinrate;
-                        console.log('解析winrate:', winrate);
                         hasWinrate = true;
                     }
                     else if (key === 'note') note = value;
@@ -128,21 +118,13 @@ const ActionsModule = {
                 
                 // 如果没有winrate字段，根据score计算一个估计值
                 if (!hasWinrate) {
-                    console.log('没有winrate字段，根据score计算');
-                    console.log('score值:', score);
-                    
                     // 改进的胜率计算逻辑
-                    // 使用sigmoid函数进行转换，使胜率在0-100之间更合理
-                    // 对于score值，我们使用一个更合理的范围
                     // 将score值限制在-1000到1000之间
                     const normalizedScore = Math.max(-1000, Math.min(1000, score));
-                    // 使用sigmoid函数将score转换为0-100的winrate
+                    // 使用线性转换将score转换为0-100的winrate
                     winrate = 50 + (normalizedScore / 20);
                     // 确保winrate在0-100之间
                     winrate = Math.max(0, Math.min(100, winrate));
-                    
-                    console.log('标准化后的score:', normalizedScore);
-                    console.log('计算的winrate:', winrate);
                 }
                 
                 // 解析着法为坐标 (格式: c3c4)
@@ -159,7 +141,7 @@ const ActionsModule = {
                     to = { x: toX, y: toY };
                 }
                 
-                const moveResult = {
+                return {
                     move,
                     score,
                     rank,
@@ -168,12 +150,8 @@ const ActionsModule = {
                     from,
                     to
                 };
-                
-                console.log('解析结果:', moveResult);
-                return moveResult;
             }).filter((move): move is NonNullable<typeof move> => move !== null);
             
-            console.log('最终解析结果:', result);
             return result;
         }
         
