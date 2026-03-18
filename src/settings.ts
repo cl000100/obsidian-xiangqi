@@ -28,6 +28,10 @@ export const DEFAULT_SETTINGS: ISettings = {
 	// NAS settings for opening identification
 	nasAddress1: "http://192.168.50.159:5050/api/identify",
 	nasAddress2: "",
+	// Auto opening identification
+	enableAutoOpeningIdentification: true,
+	autoIdentificationDelay: 500,
+	minMovesForIdentification: 4,
 	viewOnly: false,
 	rotated: false,
 	showAnnotationsOnBoard: true,
@@ -442,6 +446,68 @@ export class XQSettingTab extends PluginSettingTab {
 					this.plugin.saveSettings();
 				}),
 			);
+
+		new Setting(containerEl).setName("自动开局识别").setHeading();
+
+		new Setting(containerEl)
+			.setName("启用自动识别")
+			.setDesc("每走一步棋自动识别开局名称")
+			.addToggle((toggle) =>
+				toggle.setValue(settings.enableAutoOpeningIdentification).onChange((value) => {
+					settings.enableAutoOpeningIdentification = value;
+					this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName("识别延迟")
+			.setDesc("走棋后延迟多少毫秒进行识别（避免频繁请求）")
+			.addSlider((slider) => {
+				const controlEl = slider.sliderEl.parentElement!;
+				const valueLabel = createEl("span", {
+					text: settings.autoIdentificationDelay.toString(),
+					cls: "slider-value-label",
+				});
+				controlEl.prepend(valueLabel);
+				slider
+					.setLimits(0, 2000, 100)
+					.setValue(settings.autoIdentificationDelay)
+					.onChange((value) => {
+						settings.autoIdentificationDelay = value;
+						valueLabel.textContent = value.toString();
+						this.plugin.saveSettings();
+					});
+				slider.sliderEl.addEventListener("input", () => {
+					const value = slider.getValue();
+					settings.autoIdentificationDelay = value;
+					valueLabel.textContent = value.toString();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName("最小识别步数")
+			.setDesc("至少需要多少步棋才开始识别（确保开局特征足够明显）")
+			.addSlider((slider) => {
+				const controlEl = slider.sliderEl.parentElement!;
+				const valueLabel = createEl("span", {
+					text: settings.minMovesForIdentification.toString(),
+					cls: "slider-value-label",
+				});
+				controlEl.prepend(valueLabel);
+				slider
+					.setLimits(2, 10, 1)
+					.setValue(settings.minMovesForIdentification)
+					.onChange((value) => {
+						settings.minMovesForIdentification = value;
+						valueLabel.textContent = value.toString();
+						this.plugin.saveSettings();
+					});
+				slider.sliderEl.addEventListener("input", () => {
+					const value = slider.getValue();
+					settings.minMovesForIdentification = value;
+					valueLabel.textContent = value.toString();
+				});
+			});
 	}
 	async hide() {
 		this.plugin.refresh();

@@ -25,6 +25,10 @@ export interface ISettings {
 	// NAS settings for opening identification
 	nasAddress1: string;
 	nasAddress2: string;
+	// Auto opening identification
+	enableAutoOpeningIdentification: boolean;
+	autoIdentificationDelay: number;
+	minMovesForIdentification: number;
 	viewOnly?: boolean;
 	rotated?: boolean;
 	showAnnotationsOnBoard?: boolean;

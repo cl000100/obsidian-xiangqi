@@ -6,6 +6,73 @@ import { getICCS, genFENFromBoard, genChinesePGNFromMoves, genUBBFromMoves } fro
 const ActionsModule = {
     init(host: Record<string, any>) {
         const eventBus = host.eventBus;
+        
+        // 防抖函数，避免频繁识别
+        let identificationTimeout: number | undefined;
+        
+        // 缓存识别结果，避免重复识别相同的棋局
+        let lastPGN: string = '';
+        let lastOpeningResult: { opening: string; variation: string } | null = null;
+        
+        // 自动识别开局函数
+        function autoIdentifyOpening() {
+            // 检查是否启用了自动识别
+            if (!host.settings?.enableAutoOpeningIdentification) return;
+            
+            // 检查是否达到最小识别步数
+            const minMoves = host.settings?.minMovesForIdentification || 4;
+            if (host.currentStep < minMoves) return;
+            
+            // 生成当前路径的PGN，用于缓存判断
+            let currentPGN = "";
+            if (host.currentNode && host.currentNode.id !== 'node-root') {
+                // 构建从根节点到当前选中节点的路径
+                let currentNode = host.currentNode;
+                const pathNodes = [];
+                
+                // 从当前节点向上回溯到根节点
+                while (currentNode) {
+                    pathNodes.unshift(currentNode);
+                    if (currentNode.parentID) {
+                        currentNode = host.nodeMap.get(currentNode.parentID);
+                    } else {
+                        break;
+                    }
+                }
+                
+                // 生成PGN
+                let result = '';
+                let currentStepNum = 1;
+                
+                for (let i = 1; i < pathNodes.length; i++) {
+                    const node = pathNodes[i];
+                    if (node && node.data) {
+                        if (node.side === 'red') {
+                            result += `${currentStepNum}. ${node.data.ICCS}`;
+                        } else if (node.side === 'black') {
+                            result += `${node.data.ICCS}`;
+                        }
+                        
+                        if (i < pathNodes.length - 1) {
+                            result += ` `;
+                        }
+                        
+                        // 更新步数
+                        if (node.side === 'red') {
+                            currentStepNum++;
+                        }
+                    }
+                }
+                
+                currentPGN = result;
+            }
+            
+            // 检查PGN是否有效且与上次不同
+            if (!currentPGN || currentPGN === lastPGN) return;
+            
+            // 触发btn-click事件，传递identifyOpening命令和auto参数
+            eventBus.emit('btn-click', { name: 'identifyOpening', payload: { auto: true, pgn: currentPGN } });
+        }
 
         eventBus.on('runmove', (move: IMove) => {
             const { from, to } = move
@@ -55,6 +122,13 @@ const ActionsModule = {
             host.updateMainPath();
             eventBus.emit('updateUI')
             eventBus.emit('updatePGN')
+            
+            // 自动识别开局
+            const delay = host.settings?.autoIdentificationDelay || 500;
+            if (identificationTimeout) {
+                clearTimeout(identificationTimeout);
+            }
+            identificationTimeout = window.setTimeout(autoIdentifyOpening, delay);
         })
         eventBus.on('node-click', (id: string) => {
             host.markedPos = null;
@@ -506,6 +580,9 @@ const ActionsModule = {
                     break;
                 }
                 case 'identifyOpening': {
+                    // 提取auto参数，标记是否为自动识别
+                    const isAuto = data?.auto || false;
+                    
                     // 1. 生成当前路径的英文PGN（从根节点到当前选中节点）
                     let pgnText = "";
                     if (host.currentNode && host.currentNode.id !== 'node-root') {
@@ -552,7 +629,9 @@ const ActionsModule = {
                     
                     // 2. 预检：检查是否有坐标格式
                     if (!pgnText || !/[A-I][0-9]-[A-I][0-9]/i.test(pgnText)) {
-                        new Notice('⚠️ 未检测到有效坐标着法 (例如 B2-B4)');
+                        if (!isAuto) { // 自动识别时不显示错误提示
+                            new Notice('⚠️ 未检测到有效坐标着法 (例如 B2-B4)');
+                        }
                         break;
                     }
                     
@@ -584,10 +663,7 @@ const ActionsModule = {
                             if (requests.length > 1) {
                                 // 处理多个请求的情况，确保即使一个失败也能返回另一个的结果
                                 response = await Promise.race(requests.map(promise => 
-                                    promise.catch(err => {
-                                        // 单个请求失败，返回一个永远不会解析的值，让其他请求有机会完成
-                                        return new Promise(() => {});
-                                    })
+                                    promise.catch(() => new Promise(() => {}))
                                 ));
                                 
                                 // 检查是否所有请求都失败了
@@ -601,55 +677,74 @@ const ActionsModule = {
                             
                             const res = response.json;
                             if (res.success) {
-                                // 4. 将开局名称添加到当前选定的节点上，如果没选择则添加到第一步棋上
-                                let targetNode;
-                                if (host.currentPath.length > 1) {
-                                    // 获取当前选定的节点
-                                    const currentNodeId = host.currentNode?.id;
-                                    if (currentNodeId) {
-                                        targetNode = host.nodeMap.get(currentNodeId);
-                                    }
-                                    
-                                    // 如果当前是根节点，则使用第一步棋
-                                    if (!targetNode || targetNode.id === 'node-root') {
-                                        const firstMoveNodeId = host.currentPath[1];
-                                        targetNode = host.nodeMap.get(firstMoveNodeId);
-                                    }
+                                // 构建完整的识别结果通知
+                                let noticeMessage = `开局：${res.opening}`;
+                                if (res.variation && res.variation.trim() !== '') {
+                                    noticeMessage += `\n分支：${res.variation}`;
                                 }
                                 
-                                if (targetNode) {
-                                    if (!targetNode.comments) {
-                                        targetNode.comments = [];
-                                    }
-                                    
-                                    // 移除已有的开局识别备注
-                                    targetNode.comments = targetNode.comments.filter((comment: string) => !comment.startsWith('开局：') && !comment.startsWith('分支：'));
-                                    
-                                    // 添加新的开局识别备注
-                                    targetNode.comments.push(`开局：${res.opening}（${res.ecco}）`);
-                                    
-                                    // 如果有分支，则添加分支信息
-                                    if (res.variation && res.variation.trim() !== '') {
-                                        targetNode.comments.push(`分支：${res.variation}`);
-                                    }
-                                    
-                                    // 触发更新事件
-                                    eventBus.emit('updateUI');
-                                    eventBus.emit('updatePGN');
-                                    
-                                    // 构建完整的识别结果通知
-                                    let noticeMessage = `开局：${res.opening}`;
-                                    if (res.variation && res.variation.trim() !== '') {
-                                        noticeMessage += `\n分支：${res.variation}`;
-                                    }
+                                // 检查识别结果是否变化
+                                const currentResult = { opening: res.opening, variation: res.variation || '' };
+                                const resultChanged = !lastOpeningResult || 
+                                    lastOpeningResult.opening !== currentResult.opening || 
+                                    lastOpeningResult.variation !== currentResult.variation;
+                                
+                                // 只有当结果变化时才显示通知
+                                if (resultChanged) {
                                     new Notice(noticeMessage);
+                                    // 更新缓存
+                                    lastOpeningResult = currentResult;
+                                    lastPGN = data?.pgn || pgnText;
+                                }
+                                
+                                // 只有手动识别时才添加注释
+                                if (!isAuto) {
+                                    // 将开局名称添加到当前选定的节点上，如果没选择则添加到第一步棋上
+                                    let targetNode;
+                                    if (host.currentPath.length > 1) {
+                                        // 获取当前选定的节点
+                                        const currentNodeId = host.currentNode?.id;
+                                        if (currentNodeId) {
+                                            targetNode = host.nodeMap.get(currentNodeId);
+                                        }
+                                        
+                                        // 如果当前是根节点，则使用第一步棋
+                                        if (!targetNode || targetNode.id === 'node-root') {
+                                            const firstMoveNodeId = host.currentPath[1];
+                                            targetNode = host.nodeMap.get(firstMoveNodeId);
+                                        }
+                                    }
+                                    
+                                    if (targetNode) {
+                                        if (!targetNode.comments) {
+                                            targetNode.comments = [];
+                                        }
+                                        
+                                        // 移除已有的开局识别备注
+                                        targetNode.comments = targetNode.comments.filter((comment: string) => !comment.startsWith('开局：') && !comment.startsWith('分支：'));
+                                        
+                                        // 添加新的开局识别备注
+                                        targetNode.comments.push(`开局：${res.opening}（${res.ecco}）`);
+                                        
+                                        // 如果有分支，则添加分支信息
+                                        if (res.variation && res.variation.trim() !== '') {
+                                            targetNode.comments.push(`分支：${res.variation}`);
+                                        }
+                                        
+                                        // 触发更新事件
+                                        eventBus.emit('updateUI');
+                                        eventBus.emit('updatePGN');
+                                    }
                                 }
                             } else {
-                                new Notice(`❌ 引擎识别失败: ${res.error || "未知错误"}`);
+                                if (!isAuto) { // 自动识别时不显示错误提示
+                                    new Notice(`❌ 引擎识别失败: ${res.error || "未知错误"}`);
+                                }
                             }
                         } catch (err) {
-                            console.error('NAS Connection Error:', err);
-                            new Notice('🔥 无法连接到 NAS。请检查：1.内网IP是否变动；2.NAS容器是否启动。');
+                            if (!isAuto) { // 自动识别时不显示错误提示
+                                new Notice('🔥 无法连接到 NAS。请检查：1.内网IP是否变动；2.NAS容器是否启动。');
+                            }
                         }
                     })();
                     break;

@@ -46,6 +46,7 @@ const TreeMap = {
             host.currentNode = host.nodeMap.get('node-root');
             host.currentTurn = host.currentNode.side === 'black' ? 'black' : 'red';
             host.board = host.currentNode.board;
+            host.currentStep = 0; // 初始化currentStep
             
             // 初始化 nodeId 为 nodeMap 中最大 ID + 1，确保新节点 ID 不会冲突
             let maxId = 0;
