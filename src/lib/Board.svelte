@@ -440,8 +440,8 @@
             {@const textAnchor = dx > 0 ? 'start' : dx < 0 ? 'end' : 'middle'}
             {@const dominantBaseline = dy > 0 ? 'hanging' : dy < 0 ? 'baseline' : 'central'}
             
-            {#if (hasOverlap && !isMainLine) || hasIntersection || hasStartOverlap}
-              <!-- 有重叠且不是主线路，或路线交叉的着法，或起点相同的着法，使用弧线绘制 -->
+            {#if (hasOverlap && !isMainLine) || hasIntersection || (hasStartOverlap && startIndex > 0)}
+              <!-- 有重叠且不是主线路，或路线交叉的着法，或起点相同且不是第一个的着法，使用弧线绘制 -->
               <!-- 计算弧线参数 -->
               {@const angle = Math.atan2(dy, dx)}
               <!-- 为起点相同的着法生成不同的弧线半径和方向 -->
@@ -734,8 +734,8 @@
                   {Math.round(cloudMove.winrate)}
                 </text>
               </g>
-            {:else if (hasEndOverlap && !isBestMove) || hasIntersection || hasStartOverlap}
-              <!-- 有终点重叠且不是胜率最高的，或路线交叉的着法，或起点相同的着法，使用弧线绘制，并沿着来源方向偏移标签 -->
+            {:else if (hasEndOverlap && !isBestMove) || hasIntersection || (hasStartOverlap && !isBestMove)}
+              <!-- 有终点重叠且不是胜率最高的，或路线交叉的着法，或起点相同且不是胜率最高的着法，使用弧线绘制，并沿着来源方向偏移标签 -->
               <!-- 计算弧线参数 -->
               {@const angle = Math.atan2(dy, dx)}
               <!-- 为起点相同的着法生成不同的弧线半径和方向 -->
