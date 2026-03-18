@@ -284,7 +284,10 @@
     const regularComments = commentsText.split("\n").filter((c) => c.trim() !== "");
     const existingAnnotations = getAllAnnotations(currentNode);
     currentNode.comments = [...existingAnnotations, ...regularComments];
-    eventBus.emit("updateUI", null);
+    // 更新nodeMap中的对应节点，确保数据同步
+    nodeMap.set(currentNode.id, currentNode);
+    // 发送事件通知host更新数据
+    eventBus.emit("updateNodeComments", { nodeId: currentNode.id, comments: currentNode.comments });
     eventBus.emit("updatePGN", null);
   }
 
@@ -433,6 +436,25 @@
     d3.select(svgEl).call(zoomBehavior);
 
     tick().then(centerAndFit);
+
+    // 监听节点注释更新事件
+    const updateNodeCommentsHandler = (data: { nodeId: string; comments: string[] }) => {
+      const { nodeId, comments } = data;
+      // 更新本地的nodeMap
+      const node = nodeMap.get(nodeId);
+      if (node) {
+        node.comments = comments;
+        // 如果当前节点就是被更新的节点，也更新currentNode
+        if (currentNode && currentNode.id === nodeId) {
+          currentNode.comments = comments;
+        }
+      }
+    };
+    eventBus.on('updateNodeComments', updateNodeCommentsHandler);
+
+    return () => {
+      eventBus.off('updateNodeComments', updateNodeCommentsHandler);
+    };
   });
 
   $effect(() => {
@@ -545,7 +567,7 @@
               </g>
             {/if}
 
-            {#if getRegularComments(node).length > 0}
+            {#if getRegularComments(node).length > 0 || getAllAnnotations(node).length > 0}
               {@const hasAnnotation = !!primaryAnnotation}
               <g
                 transform={`translate(${hasAnnotation ? 0.1 * width : 0.35 * width} ${-0.7 * height}) scale(${height * 0.03})`}

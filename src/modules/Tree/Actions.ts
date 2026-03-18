@@ -275,6 +275,19 @@ const ActionsModule = {
             cloudLibraryTimeout = window.setTimeout(fetchCloudMoves, cloudDelay);
         })
 
+        eventBus.on('updateNodeComments', (data: { nodeId: string; comments: string[] }) => {
+            const { nodeId, comments } = data;
+            // 更新host.nodeMap中的节点
+            const node = host.nodeMap.get(nodeId);
+            if (node) {
+                node.comments = comments;
+                // 如果当前节点就是被更新的节点，也更新host.currentNode
+                if (host.currentNode.id === nodeId) {
+                    host.currentNode = { ...node };
+                }
+            }
+        })
+
         eventBus.on('updatePGN', () => {
             const pgn = stringifyPGN(host.root);
             const content = [host.tags?.trim(), pgn]
@@ -311,6 +324,10 @@ const ActionsModule = {
                             node.comments.push(data); // 添加新的批注
                         }
                     }
+                    // 同步更新host.nodeMap中的节点
+                    host.nodeMap.set(node.id, node);
+                    // 发送事件通知其他组件更新
+                    eventBus.emit('updateNodeComments', { nodeId: node.id, comments: node.comments });
                     break;
                 }
                 case 'remove': {
@@ -911,13 +928,23 @@ const ActionsModule = {
                         node.comments = node.comments.filter((c: string) => !c.startsWith('flag-'));
                         node.comments.push(color);
                     }
+                    // 同步更新host.nodeMap中的节点
+                    host.nodeMap.set(node.id, node);
+                    // 发送事件通知其他组件更新
+                    eventBus.emit('updateNodeComments', { nodeId: node.id, comments: node.comments });
                     break;
                 }
                 case 'clearAllPathColor': {
+                    const updatedNodes: Array<{ nodeId: string; comments: string[] }> = [];
                     for (const node of host.nodeMap.values()) {
                         if (node.comments) {
                             node.comments = node.comments.filter((c: string) => !c.startsWith('flag-'));
+                            updatedNodes.push({ nodeId: node.id, comments: node.comments });
                         }
+                    }
+                    // 发送事件通知所有更新的节点
+                    for (const { nodeId, comments } of updatedNodes) {
+                        eventBus.emit('updateNodeComments', { nodeId, comments });
                     }
                     break;
                 }
