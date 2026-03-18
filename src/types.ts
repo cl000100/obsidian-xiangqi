@@ -29,6 +29,9 @@ export interface ISettings {
 	enableAutoOpeningIdentification: boolean;
 	autoIdentificationDelay: number;
 	minMovesForIdentification: number;
+	// Cloud library settings
+	enableCloudLibrary: boolean;
+	cloudLibraryDelay: number;
 	viewOnly?: boolean;
 	rotated?: boolean;
 	showAnnotationsOnBoard?: boolean;
@@ -60,6 +63,16 @@ export const PIECE_CHARS = {
 export type PieceType = keyof typeof PIECE_CHARS;
 export type IBoard = (PieceType | null)[][];
 export type IPosition = { x: number; y: number };
+export interface ICloudMove {
+	move: string;
+	score: number;
+	rank: number;
+	winrate: number;
+	note?: string;
+	from?: IPosition;
+	to?: IPosition;
+}
+
 export interface IMove {
 	type?: PieceType;
 	from: IPosition;
@@ -69,6 +82,7 @@ export interface IMove {
 	WXF?: string;
 	comments?: string[];
 }
+
 export type ChessNode = {
 	id: string;
 	data: IMove | null;
@@ -81,6 +95,7 @@ export type ChessNode = {
 	children: ChessNode[];
 	board?: IBoard;
 	comments?: string[];
+	cloudMoves?: ICloudMove[];
 };
 export type NodeMap = Map<string, ChessNode>;
 import type { MarkdownPostProcessorContext, MarkdownSectionInformation } from "obsidian";

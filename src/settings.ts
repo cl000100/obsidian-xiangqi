@@ -32,6 +32,10 @@ export const DEFAULT_SETTINGS: ISettings = {
 	enableAutoOpeningIdentification: true,
 	autoIdentificationDelay: 500,
 	minMovesForIdentification: 4,
+	// Cloud library settings
+	enableCloudLibrary: true,
+	cloudLibraryDelay: 300,
+	cloudMoveColor: "#187C00",
 	viewOnly: false,
 	rotated: false,
 	showAnnotationsOnBoard: true,
@@ -508,6 +512,54 @@ export class XQSettingTab extends PluginSettingTab {
 					valueLabel.textContent = value.toString();
 				});
 			});
+
+		new Setting(containerEl).setName("云库设置").setHeading();
+
+		new Setting(containerEl)
+			.setName("启用云库")
+			.setDesc("每走一步棋自动获取云库着法和胜率信息")
+			.addToggle((toggle) =>
+				toggle.setValue(settings.enableCloudLibrary).onChange((value) => {
+					settings.enableCloudLibrary = value;
+					this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName("云库延迟")
+			.setDesc("走棋后延迟多少毫秒请求云库数据（避免频繁请求）")
+			.addSlider((slider) => {
+				const controlEl = slider.sliderEl.parentElement!;
+				const valueLabel = createEl("span", {
+					text: settings.cloudLibraryDelay.toString(),
+					cls: "slider-value-label",
+				});
+				controlEl.prepend(valueLabel);
+				slider
+					.setLimits(0, 2000, 100)
+					.setValue(settings.cloudLibraryDelay)
+					.onChange((value) => {
+						settings.cloudLibraryDelay = value;
+						valueLabel.textContent = value.toString();
+						this.plugin.saveSettings();
+					});
+				slider.sliderEl.addEventListener("input", () => {
+					const value = slider.getValue();
+					settings.cloudLibraryDelay = value;
+					valueLabel.textContent = value.toString();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName("云库着法颜色")
+			.setDesc("设置云库推荐着法的颜色")
+			.addText((text) =>
+				text.setValue(settings.cloudMoveColor).onChange((value) => {
+					settings.cloudMoveColor = value;
+					this.plugin.saveSettings();
+					this.plugin.refresh();
+				}),
+			);
 	}
 	async hide() {
 		this.plugin.refresh();

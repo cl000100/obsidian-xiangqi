@@ -32,7 +32,7 @@ const TreeViewModule = {
                 board: host.currentNode.board,
                 markedPos: host.markedPos,
                 currentTurn: host.currentTurn,
-                currentNode: host.currentNode,
+                currentNode: { ...host.currentNode },
                 currentPath: host.currentPath,
             });
         })

@@ -4,6 +4,8 @@
   import { PIECE_CHARS } from "../types";
   import { isIOS } from "../utils/device";
 
+  import type { ICloudMove } from "../types";
+
   interface Props {
     settings: ISettings;
     board: IBoard;
@@ -14,6 +16,7 @@
     rotated: boolean;
     variations?: IMove[];
     currentMove?: IMove | null;
+    cloudMoves?: ICloudMove[];
   }
 
   let {
@@ -26,6 +29,7 @@
     rotated,
     variations = [],
     currentMove = null,
+    cloudMoves = [],
   }: Props = $props();
 
   let Bnum = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -351,6 +355,72 @@
               font-weight="bold"
             >
               {index + 1}
+            </text>
+          {/if}
+        {/each}
+      </g>
+    {/if}
+    
+    <!-- 云库着法 -->
+    {#if cloudMoves && cloudMoves.length > 0}
+      <g id="cloud-variations">
+        {#each cloudMoves.slice(0, 4) as cloudMove, index}
+          <!-- 计算着法的起点和终点 -->
+          {#if cloudMove.from && cloudMove.to}
+            {@const from = rotated ? rotatePos(cloudMove.from) : cloudMove.from}
+            {@const to = rotated ? rotatePos(cloudMove.to) : cloudMove.to}
+            <!-- 计算起点和终点的坐标 -->
+            {@const fromX = (from.x + 1) * cellSize}
+            {@const fromY = (from.y + 1) * cellSize}
+            {@const toX = (to.x + 1) * cellSize}
+            {@const toY = (to.y + 1) * cellSize}
+            
+            <!-- 使用设置中的云库着法颜色 -->
+            {@const color = settings.cloudMoveColor || "#187C00"}
+            
+            <!-- 计算线条终点（到达圆圈边缘） -->
+            {@const dx = toX - fromX}
+            {@const dy = toY - fromY}
+            {@const distance = Math.sqrt(dx * dx + dy * dy)}
+            {@const radius = cellSize * 0.3}
+            {@const lineEndX = toX - (dx / distance) * radius}
+            {@const lineEndY = toY - (dy / distance) * radius}
+            
+            <!-- 绘制着法线路 -->
+            <line
+              x1={fromX}
+              y1={fromY}
+              x2={lineEndX}
+              y2={lineEndY}
+              stroke={color}
+              stroke-width={cellSize * 0.06}
+              stroke-dasharray={`${cellSize * 0.15} ${cellSize * 0.1}`}
+              opacity={0.6}
+              stroke-linecap="round"
+            />
+            <!-- 绘制着法终点标记 -->
+            <circle
+              cx={toX}
+              cy={toY}
+              r={cellSize * 0.3}
+              stroke={color}
+              stroke-width={cellSize * 0.06}
+              fill="none"
+              opacity={0.6}
+            />
+            
+            <!-- 为着法添加胜率标记 -->
+            <text
+              x={toX}
+              y={toY}
+              fill={settings.cloudMoveColor || "#187C00"}
+              font-size={cellSize * 0.2}
+              text-anchor="middle"
+              dominant-baseline="middle"
+              opacity="0.8"
+              font-weight="bold"
+            >
+              {Math.round(cloudMove.winrate)}%
             </text>
           {/if}
         {/each}

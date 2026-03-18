@@ -38,6 +38,8 @@
       .map(child => child.data)
       .filter((data): data is IMove => data !== null) // 过滤掉null值
   );
+  
+  let cloudMoves = $derived(currentNode.cloudMoves || []);
 
   onMount(async () => {
     await tick();
@@ -52,7 +54,7 @@
 </script>
 
 <div class="tree-view {position}">
-    <Board {settings} {board} {lastMove} {markedPos} {currentTurn} {eventBus} {rotated} {variations} {currentMove} />
+    <Board {settings} {board} {lastMove} {markedPos} {currentTurn} {eventBus} {rotated} {variations} {currentMove} {cloudMoves} />
     <Toolbar {eventBus} />
     <Tree {nodeMap} {eventBus} {currentNode} {currentPath} {settings} />
   </div>

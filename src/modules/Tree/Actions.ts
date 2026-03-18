@@ -1,6 +1,6 @@
 import { Notice, requestUrl } from "obsidian";
 import { registerPGNViewModule } from "../../core/module-system";
-import type { ChessNode, IMove } from "../../types";
+import type { ChessNode, IMove, ICloudMove } from "../../types";
 import { getICCS, genFENFromBoard, genChinesePGNFromMoves, genUBBFromMoves } from "../../utils/parse";
 
 const ActionsModule = {
@@ -9,6 +9,9 @@ const ActionsModule = {
         
         // 防抖函数，避免频繁识别
         let identificationTimeout: number | undefined;
+        
+        // 防抖函数，避免频繁请求云库
+        let cloudLibraryTimeout: number | undefined;
         
         // 缓存识别结果，避免重复识别相同的棋局
         let lastPGN: string = '';
@@ -74,6 +77,101 @@ const ActionsModule = {
             eventBus.emit('btn-click', { name: 'identifyOpening', payload: { auto: true, pgn: currentPGN } });
         }
 
+        // 解析云库着法信息
+        function parseCloudMoves(response: string): ICloudMove[] {
+            if (response === 'unknown' || response === 'invalid board' || response === 'checkmate' || response === 'stalemate') {
+                return [];
+            }
+            
+            const moves = response.split('|');
+            return moves.map(moveStr => {
+                const parts = moveStr.split(',');
+                if (parts.length < 4) return null;
+                
+                // 解析字段值
+                let move = '';
+                let score = 0;
+                let rank = 0;
+                let winrate = 0;
+                let note = '';
+                
+                for (const part of parts) {
+                    const [key, value] = part.split(':');
+                    if (key === 'move') move = value;
+                    else if (key === 'score') score = parseInt(value) || 0;
+                    else if (key === 'rank') rank = parseInt(value) || 0;
+                    else if (key === 'winrate') winrate = parseFloat(value) || 0;
+                    else if (key === 'note') note = value;
+                }
+                
+                // 解析着法为坐标 (格式: c3c4)
+                let from: { x: number; y: number } | undefined;
+                let to: { x: number; y: number } | undefined;
+                
+                if (move.length === 4) {
+                    const fromX = move.charCodeAt(0) - 97; // a-i -> 0-8
+                    const fromY = 9 - parseInt(move[1]); // 0-9 -> 9-0
+                    const toX = move.charCodeAt(2) - 97; // a-i -> 0-8
+                    const toY = 9 - parseInt(move[3]); // 0-9 -> 9-0
+                    
+                    from = { x: fromX, y: fromY };
+                    to = { x: toX, y: toY };
+                }
+                
+                return {
+                    move,
+                    score,
+                    rank,
+                    winrate,
+                    note,
+                    from,
+                    to
+                };
+            }).filter((move): move is ICloudMove => move !== null);
+        }
+        
+        // 获取云库着法信息
+        async function fetchCloudMoves() {
+            console.log('=== 开始获取云库着法 ===');
+            if (!host.currentNode || !host.currentNode.board) {
+                console.log('❌ 没有当前节点或棋盘数据');
+                return;
+            }
+            console.log('🎯 当前节点ID:', host.currentNode.id);
+            console.log('🎯 当前节点着法:', host.currentNode.data?.ICCS);
+            
+            // 检查是否启用云库
+            if (!host.settings?.enableCloudLibrary) {
+                console.log('❌ 云库未启用');
+                return;
+            }
+            console.log('✅ 云库已启用');
+            console.log('⏱️  云库延迟:', host.settings?.cloudLibraryDelay || 300);
+            
+            try {
+                const fen = genFENFromBoard(host.currentNode.board, host.currentTurn);
+                const url = `http://www.chessdb.cn/chessdb.php?action=queryall&board=${encodeURIComponent(fen)}`;
+                console.log('📡 云库API请求URL:', url);
+                
+                const response = await requestUrl(url);
+                console.log('📡 云库API响应:', response.text);
+                
+                const cloudMoves = parseCloudMoves(response.text);
+                console.log('🧩 解析后的云库着法:', cloudMoves);
+                
+                if (cloudMoves.length > 0) {
+                    host.currentNode.cloudMoves = cloudMoves;
+                    console.log('✅ 云库着法已存储到当前节点');
+                    eventBus.emit('updateUI');
+                    console.log('🚀 已触发updateUI事件');
+                } else {
+                    console.log('⚠️  未解析到云库着法');
+                }
+            } catch (error) {
+                console.error('💥 获取云库着法失败:', error);
+            }
+        }
+
         eventBus.on('runmove', (move: IMove) => {
             const { from, to } = move
             const currentNode = host.currentNode;
@@ -83,7 +181,9 @@ const ActionsModule = {
                     host.board = host.currentNode.board;
                     host.currentTurn = host.currentTurn === 'red' ? 'black' : 'red';
                     host.updateMainPath();
-                    eventBus.emit('updateUI')
+                    eventBus.emit('updateUI');
+                    // 获取云库着法
+                    fetchCloudMoves();
                     return;
                 }
             }
@@ -120,8 +220,8 @@ const ActionsModule = {
             host.currentTurn = host.currentTurn === 'red' ? 'black' : 'red';
             host.currentStep++;
             host.updateMainPath();
-            eventBus.emit('updateUI')
-            eventBus.emit('updatePGN')
+            eventBus.emit('updateUI');
+            eventBus.emit('updatePGN');
             
             // 自动识别开局
             const delay = host.settings?.autoIdentificationDelay || 500;
@@ -129,6 +229,13 @@ const ActionsModule = {
                 clearTimeout(identificationTimeout);
             }
             identificationTimeout = window.setTimeout(autoIdentifyOpening, delay);
+            
+            // 获取云库着法（防抖处理）
+            const cloudDelay = host.settings?.cloudLibraryDelay || 300;
+            if (cloudLibraryTimeout) {
+                clearTimeout(cloudLibraryTimeout);
+            }
+            cloudLibraryTimeout = window.setTimeout(fetchCloudMoves, cloudDelay);
         })
         eventBus.on('node-click', (id: string) => {
             host.markedPos = null;
@@ -136,7 +243,13 @@ const ActionsModule = {
             host.board = host.currentNode.board;
             host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
             host.updateMainPath();
-            host.eventBus.emit('updateUI')
+            host.eventBus.emit('updateUI');
+            // 获取云库着法（防抖处理）
+            const cloudDelay = host.settings?.cloudLibraryDelay || 300;
+            if (cloudLibraryTimeout) {
+                clearTimeout(cloudLibraryTimeout);
+            }
+            cloudLibraryTimeout = window.setTimeout(fetchCloudMoves, cloudDelay);
         })
 
         eventBus.on('updatePGN', () => {
