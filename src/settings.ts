@@ -522,6 +522,7 @@ export class XQSettingTab extends PluginSettingTab {
 				toggle.setValue(settings.enableCloudLibrary).onChange((value) => {
 					settings.enableCloudLibrary = value;
 					this.plugin.saveSettings();
+					this.plugin.refresh();
 				}),
 			);
 

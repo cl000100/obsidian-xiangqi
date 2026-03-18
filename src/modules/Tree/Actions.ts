@@ -127,48 +127,34 @@ const ActionsModule = {
                     from,
                     to
                 };
-            }).filter((move): move is ICloudMove => move !== null);
+            }).filter((move): move is NonNullable<typeof move> => move !== null);
         }
         
         // 获取云库着法信息
         async function fetchCloudMoves() {
-            console.log('=== 开始获取云库着法 ===');
             if (!host.currentNode || !host.currentNode.board) {
-                console.log('❌ 没有当前节点或棋盘数据');
                 return;
             }
-            console.log('🎯 当前节点ID:', host.currentNode.id);
-            console.log('🎯 当前节点着法:', host.currentNode.data?.ICCS);
             
             // 检查是否启用云库
             if (!host.settings?.enableCloudLibrary) {
-                console.log('❌ 云库未启用');
                 return;
             }
-            console.log('✅ 云库已启用');
-            console.log('⏱️  云库延迟:', host.settings?.cloudLibraryDelay || 300);
             
             try {
                 const fen = genFENFromBoard(host.currentNode.board, host.currentTurn);
                 const url = `http://www.chessdb.cn/chessdb.php?action=queryall&board=${encodeURIComponent(fen)}`;
-                console.log('📡 云库API请求URL:', url);
                 
                 const response = await requestUrl(url);
-                console.log('📡 云库API响应:', response.text);
                 
                 const cloudMoves = parseCloudMoves(response.text);
-                console.log('🧩 解析后的云库着法:', cloudMoves);
                 
                 if (cloudMoves.length > 0) {
                     host.currentNode.cloudMoves = cloudMoves;
-                    console.log('✅ 云库着法已存储到当前节点');
                     eventBus.emit('updateUI');
-                    console.log('🚀 已触发updateUI事件');
-                } else {
-                    console.log('⚠️  未解析到云库着法');
                 }
             } catch (error) {
-                console.error('💥 获取云库着法失败:', error);
+                console.error('获取云库着法失败:', error);
             }
         }
 
