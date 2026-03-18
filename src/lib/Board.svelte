@@ -132,6 +132,15 @@
     const rgb = hslToRgb(h, s, l);
     return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
   }
+  
+  // 线段交叉检测函数
+  function doLineSegmentsIntersect(p1: {x: number, y: number}, p2: {x: number, y: number}, p3: {x: number, y: number}, p4: {x: number, y: number}) {
+    // 计算线段p1-p2和p3-p4是否相交
+    const ccw = (p: {x: number, y: number}, q: {x: number, y: number}, r: {x: number, y: number}) => {
+      return (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y) > 0;
+    };
+    return (ccw(p1, p3, p4) !== ccw(p2, p3, p4)) && (ccw(p1, p2, p3) !== ccw(p1, p2, p4));
+  }
 
   function rotateBoard(board: IBoard): IBoard {
     const newBoard: IBoard = Array.from({ length: 9 }, () => Array(10).fill(null));
@@ -462,7 +471,30 @@
         }
         acc[startKey].push(move);
         return acc;
-      }, {} as Record<string, typeof displayMoves>)}
+      }, {} as Record<string, typeof displayMoves>)}      
+      <!-- 检测路线交叉 -->
+      {@const movesWithIntersections = displayMoves.filter((move, index) => {
+        if (!move.from || !move.to) return false;
+        const from = rotated ? rotatePos(move.from) : move.from;
+        const to = rotated ? rotatePos(move.to) : move.to;
+        const p1 = {x: (from.x + 1) * cellSize, y: (from.y + 1) * cellSize};
+        const p2 = {x: (to.x + 1) * cellSize, y: (to.y + 1) * cellSize};
+        
+        // 检查与之前的着法是否交叉
+        for (let i = 0; i < index; i++) {
+          const otherMove = displayMoves[i];
+          if (!otherMove.from || !otherMove.to) continue;
+          const otherFrom = rotated ? rotatePos(otherMove.from) : otherMove.from;
+          const otherTo = rotated ? rotatePos(otherMove.to) : otherMove.to;
+          const p3 = {x: (otherFrom.x + 1) * cellSize, y: (otherFrom.y + 1) * cellSize};
+          const p4 = {x: (otherTo.x + 1) * cellSize, y: (otherTo.y + 1) * cellSize};
+          
+          if (doLineSegmentsIntersect(p1, p2, p3, p4)) {
+            return true;
+          }
+        }
+        return false;
+      })}
       
       <g id="cloud-variations">
         {#each displayMoves.filter((move, idx, arr) => {
@@ -494,9 +526,14 @@
             {@const startKey = `${from.x},${from.y}`}
             {@const startMoves = movesByStartPosition[startKey] || []}
             {@const hasStartOverlap = startMoves.length > 1}
+            <!-- 计算当前着法在起点分组中的索引 -->
+            {@const startIndex = startMoves.indexOf(cloudMove)}
             
-            <!-- 综合判断是否有重叠 -->
-            {@const hasOverlap = hasEndOverlap || hasStartOverlap}
+            <!-- 检查是否有路线交叉 -->
+            {@const hasIntersection = movesWithIntersections.includes(cloudMove)}
+            
+            <!-- 综合判断是否有重叠或交叉 -->
+            {@const hasOverlap = hasEndOverlap || hasStartOverlap || hasIntersection}
             
             <!-- 找到胜率最高的着法 -->
             {@const bestMove = positionMoves.reduce((best, move) => move.winrate > best.winrate ? move : best, positionMoves[0])}
@@ -525,17 +562,18 @@
             {@const textAnchor = dx > 0 ? 'start' : dx < 0 ? 'end' : 'middle'}
             {@const dominantBaseline = dy > 0 ? 'hanging' : dy < 0 ? 'baseline' : 'central'}
             
-            {#if hasOverlap && !isBestMove}
-              <!-- 有重叠且不是胜率最高的，使用弧线绘制，并沿着来源方向偏移标签 -->
+            {#if (hasEndOverlap && !isBestMove) || hasIntersection || hasStartOverlap}
+              <!-- 有终点重叠且不是胜率最高的，或路线交叉的着法，或起点相同的着法，使用弧线绘制，并沿着来源方向偏移标签 -->
               <!-- 计算弧线参数 -->
               {@const angle = Math.atan2(dy, dx)}
-              {@const arcRadius = Math.max(cellSize * 2, distance / 2)}
+              <!-- 为起点相同的着法生成不同的弧线半径和方向 -->
+              {@const arcRadius = hasStartOverlap ? Math.max(cellSize * 2, distance / 2) + (startIndex * cellSize) : Math.max(cellSize * 2, distance / 2)}
+              {@const sweepFlag = hasStartOverlap && startIndex % 2 === 1 ? 0 : 1} <!-- 交替弧线方向 -->
               {@const arcCenterX = toX - Math.cos(angle) * arcRadius}
               {@const arcCenterY = toY - Math.sin(angle) * arcRadius}
               {@const startAngle = angle + Math.PI}
               {@const endAngle = angle}
               {@const largeArcFlag = 0}
-              {@const sweepFlag = 1}
               
               <!-- 绘制弧线 -->
               <path
@@ -559,27 +597,48 @@
                 opacity={0.6}
               />
               
-              <!-- 朝向起点方向偏移标签 -->
-              {@const overlapOffset = cellSize * 0.3}
-              {@const overlapLabelX = toX - (dx / distance) * overlapOffset}
-              {@const overlapLabelY = toY - (dy / distance) * overlapOffset}
-              
-              <!-- 为着法添加胜率标记（沿着来源方向偏移） -->
-              <g transform={`translate(${overlapLabelX}, ${overlapLabelY})`}>
-                <text
-                  x="0"
-                  y="0"
-                  fill={adjustedColor}
-                  font-size={cellSize * 0.26}
-                  text-anchor="end"
-                  dominant-baseline="central"
-                  opacity="0.8"
-                  font-weight="bold"
-                  style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
-                >
-                  {Math.round(cloudMove.winrate)}
-                </text>
-              </g>
+              {#if hasEndOverlap && !isBestMove}
+                <!-- 只有终点有重叠且不是胜率最高的着法，才偏移标签 -->
+                <!-- 朝向起点方向偏移标签 -->
+                {@const overlapOffset = cellSize * 0.3}
+                {@const overlapLabelX = toX - (dx / distance) * overlapOffset}
+                {@const overlapLabelY = toY - (dy / distance) * overlapOffset}
+                
+                <!-- 为着法添加胜率标记（沿着来源方向偏移） -->
+                <g transform={`translate(${overlapLabelX}, ${overlapLabelY})`}>
+                  <text
+                    x="0"
+                    y="0"
+                    fill={adjustedColor}
+                    font-size={cellSize * 0.26}
+                    text-anchor="end"
+                    dominant-baseline="central"
+                    opacity="0.8"
+                    font-weight="bold"
+                    style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                  >
+                    {Math.round(cloudMove.winrate)}
+                  </text>
+                </g>
+              {:else}
+                <!-- 终点没有重叠，标签不偏移，放在圆圈里 -->
+                <!-- 为着法添加胜率标记（在圆圈里，不偏移） -->
+                <g transform={`translate(${toX}, ${toY})`}>
+                  <text
+                    x="0"
+                    y="0"
+                    fill={adjustedColor}
+                    font-size={cellSize * 0.26}
+                    text-anchor="middle"
+                    dominant-baseline="central"
+                    opacity="0.8"
+                    font-weight="bold"
+                    style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                  >
+                    {Math.round(cloudMove.winrate)}
+                  </text>
+                </g>
+              {/if}
             {:else}
               <!-- 没有重叠或胜率最高的着法，使用直线绘制，标签放在圆圈里 -->
               <!-- 绘制着法线路 -->
