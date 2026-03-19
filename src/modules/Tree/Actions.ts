@@ -415,6 +415,11 @@ const ActionsModule = {
                     host.currentNode = host.nodeMap.get(host.currentPath[0]);
                     host.board = host.currentNode.board;
                     host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
+                    // 清除云库着法
+                    if (cloudLibraryTimeout) {
+                        clearTimeout(cloudLibraryTimeout);
+                        cloudLibraryTimeout = undefined;
+                    }
                     break;
                 }
                 case 'back': {
@@ -422,6 +427,11 @@ const ActionsModule = {
                         host.currentNode = host.nodeMap.get(host.currentNode.parentID);
                         host.board = host.currentNode.board;
                         host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
+                    }
+                    // 清除云库着法
+                    if (cloudLibraryTimeout) {
+                        clearTimeout(cloudLibraryTimeout);
+                        cloudLibraryTimeout = undefined;
                     }
                     break;
                 }
@@ -433,12 +443,22 @@ const ActionsModule = {
                         host.board = host.currentNode.board;
                         host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
                     }
+                    // 清除云库着法
+                    if (cloudLibraryTimeout) {
+                        clearTimeout(cloudLibraryTimeout);
+                        cloudLibraryTimeout = undefined;
+                    }
                     break;
                 }
                 case 'toEnd': {
                     host.currentNode = host.nodeMap.get(host.currentPath[host.currentPath.length - 1]);
                     host.board = host.currentNode.board;
                     host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
+                    // 清除云库着法
+                    if (cloudLibraryTimeout) {
+                        clearTimeout(cloudLibraryTimeout);
+                        cloudLibraryTimeout = undefined;
+                    }
                     break;
                 }
                 case 'prevVariation': {

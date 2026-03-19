@@ -2,7 +2,7 @@
   import Tree from "./Tree.svelte";
   import Board from "../Board.svelte";
   import Toolbar from "./Toolbar.svelte";
-  import type { ChessNode, IBoard, IPosition, ISettings, NodeMap } from "../../types";
+  import type { ChessNode, IBoard, IPosition, ISettings, NodeMap, IMove } from "../../types";
   import type { EventBus } from "../../core/event-bus";
   import { isIOS } from "../../utils/device";
   import { onMount, tick } from "svelte";
@@ -39,7 +39,13 @@
       .filter((data): data is IMove => data !== null) // 过滤掉null值
   );
   
-  let cloudMoves = $derived(currentNode.cloudMoves || []);
+  // 从 nodeMap 中获取最新的 cloudMoves，确保云库着法能立即显示
+  let cloudMoves = $derived.by(() => {
+    // 监听 nodeMap 的变化
+    nodeMap.size;
+    const node = nodeMap.get(currentNode.id);
+    return node?.cloudMoves || [];
+  });
 
   onMount(async () => {
     await tick();
