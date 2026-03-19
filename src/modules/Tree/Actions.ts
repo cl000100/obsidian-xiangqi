@@ -179,10 +179,8 @@ const ActionsModule = {
                 
                 // 无论是否有云库着法，都更新currentNode.cloudMoves
                 // 这样当残局库中没有对应棋局时，会清除之前的着法信息
-                host.currentNode = {
-                    ...host.currentNode,
-                    cloudMoves
-                };
+                host.currentNode.cloudMoves = cloudMoves;
+                host.nodeMap.set(host.currentNode.id, host.currentNode);
                 eventBus.emit('updateUI');
             } catch (error) {
                 console.error('获取云库着法失败:', error);
@@ -283,7 +281,8 @@ const ActionsModule = {
                 node.comments = comments;
                 // 如果当前节点就是被更新的节点，也更新host.currentNode
                 if (host.currentNode.id === nodeId) {
-                    host.currentNode = { ...node };
+                    host.currentNode.comments = comments;
+                    host.nodeMap.set(host.currentNode.id, host.currentNode);
                 }
             }
         })
