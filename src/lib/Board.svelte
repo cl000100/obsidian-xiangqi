@@ -727,7 +727,7 @@
                   font-size={cellSize * 0.26}
                   text-anchor="middle"
                   dominant-baseline="central"
-                  opacity="0.8"
+                  opacity="0.95"
                   font-weight="bold"
                   style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
                 >
@@ -785,7 +785,7 @@
                     font-size={cellSize * 0.26}
                     text-anchor="end"
                     dominant-baseline="central"
-                    opacity="0.8"
+                    opacity="0.95"
                     font-weight="bold"
                     style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
                   >
@@ -803,7 +803,7 @@
                     font-size={cellSize * 0.26}
                     text-anchor="middle"
                     dominant-baseline="central"
-                    opacity="0.8"
+                    opacity="0.95"
                     font-weight="bold"
                     style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
                   >
@@ -845,7 +845,7 @@
                   font-size={cellSize * 0.26}
                   text-anchor="middle"
                   dominant-baseline="central"
-                  opacity="0.8"
+                  opacity="0.95"
                   font-weight="bold"
                   style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
                 >
