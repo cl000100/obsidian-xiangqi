@@ -72,26 +72,31 @@ function main() {
     const packageJson = readJson(packageJsonPath);
     const manifestJson = readJson(manifestJsonPath);
     
-    const currentVersion = packageJson.version;
-    const newVersion = incrementVersion(currentVersion, type);
-    
-    console.log(`当前版本: ${currentVersion}`);
-    console.log(`新版本: ${newVersion} (${type})`);
-    
-    packageJson.version = newVersion;
-    manifestJson.version = newVersion;
-    
-    writeJson(packageJsonPath, packageJson);
-    writeJson(manifestJsonPath, manifestJson);
-    
-    console.log('✓ 已更新 package.json');
-    console.log('✓ 已更新 manifest.json');
-    
     if (shouldArchive) {
-        archiveBuild(newVersion);
+        // 仅归档，不递增版本号
+        const currentVersion = packageJson.version;
+        console.log(`当前版本: ${currentVersion}`);
+        archiveBuild(currentVersion);
+        console.log(`\n构建文件已归档到: releases/v${currentVersion}`);
+    } else {
+        // 递增版本号
+        const currentVersion = packageJson.version;
+        const newVersion = incrementVersion(currentVersion, type);
+        
+        console.log(`当前版本: ${currentVersion}`);
+        console.log(`新版本: ${newVersion} (${type})`);
+        
+        packageJson.version = newVersion;
+        manifestJson.version = newVersion;
+        
+        writeJson(packageJsonPath, packageJson);
+        writeJson(manifestJsonPath, manifestJson);
+        
+        console.log('✓ 已更新 package.json');
+        console.log('✓ 已更新 manifest.json');
+        
+        console.log(`\n版本号已更新为: ${newVersion}`);
     }
-    
-    console.log(`\n版本号已更新为: ${newVersion}`);
 }
 
 main();
