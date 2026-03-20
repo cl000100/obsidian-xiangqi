@@ -188,6 +188,7 @@ const ActionsModule = {
         }
 
         eventBus.on('runmove', (move: IMove) => {
+            host.showCloudMoves = true;
             const { from, to } = move
             const currentNode = host.currentNode;
             for (let node of currentNode.children) {
@@ -254,6 +255,7 @@ const ActionsModule = {
         })
         eventBus.on('node-click', (id: string) => {
             host.markedPos = null;
+            host.showCloudMoves = true;
             host.currentNode = host.nodeMap.get(id);
             host.board = host.currentNode.board;
             host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
@@ -415,7 +417,7 @@ const ActionsModule = {
                     host.currentNode = host.nodeMap.get(host.currentPath[0]);
                     host.board = host.currentNode.board;
                     host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
-                    // 清除云库着法
+                    host.showCloudMoves = false;
                     if (cloudLibraryTimeout) {
                         clearTimeout(cloudLibraryTimeout);
                         cloudLibraryTimeout = undefined;
@@ -428,7 +430,7 @@ const ActionsModule = {
                         host.board = host.currentNode.board;
                         host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
                     }
-                    // 清除云库着法
+                    host.showCloudMoves = false;
                     if (cloudLibraryTimeout) {
                         clearTimeout(cloudLibraryTimeout);
                         cloudLibraryTimeout = undefined;
@@ -443,7 +445,7 @@ const ActionsModule = {
                         host.board = host.currentNode.board;
                         host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
                     }
-                    // 清除云库着法
+                    host.showCloudMoves = false;
                     if (cloudLibraryTimeout) {
                         clearTimeout(cloudLibraryTimeout);
                         cloudLibraryTimeout = undefined;
@@ -454,7 +456,7 @@ const ActionsModule = {
                     host.currentNode = host.nodeMap.get(host.currentPath[host.currentPath.length - 1]);
                     host.board = host.currentNode.board;
                     host.currentTurn = host.currentNode.side === 'red' ? 'black' : 'red';
-                    // 清除云库着法
+                    host.showCloudMoves = false;
                     if (cloudLibraryTimeout) {
                         clearTimeout(cloudLibraryTimeout);
                         cloudLibraryTimeout = undefined;

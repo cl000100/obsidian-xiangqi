@@ -149,4 +149,5 @@ export interface IPGNViewHost extends IHost {
 	currentNode: ChessNode | null;
 	currentPath: string[];
 	settings: ISettings;
+	showCloudMoves: boolean;
 }

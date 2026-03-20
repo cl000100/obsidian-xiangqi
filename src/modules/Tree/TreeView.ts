@@ -21,6 +21,7 @@ const TreeViewModule = {
                     eventBus: host.eventBus,
                     currentNode: host.currentNode,
                     currentPath: host.currentPath,
+                    showCloudMoves: host.showCloudMoves,
                 }
             })
         })
@@ -34,6 +35,7 @@ const TreeViewModule = {
                 currentTurn: host.currentTurn,
                 currentNode: host.currentNode,
                 currentPath: host.currentPath,
+                showCloudMoves: host.showCloudMoves,
             });
         })
 

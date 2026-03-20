@@ -59,6 +59,7 @@ const TreeMap = {
                 }
             }
             host.nodeId = maxId + 1;
+            host.showCloudMoves = false;
             
             host.updateMainPath();
         });

@@ -17,6 +17,7 @@
     variations?: IMove[];
     currentMove?: IMove | null;
     cloudMoves?: ICloudMove[];
+    showCloudMoves?: boolean;
   }
 
   let {
@@ -30,6 +31,7 @@
     variations = [],
     currentMove = null,
     cloudMoves = [],
+    showCloudMoves = false,
   }: Props = $props();
 
   let Bnum = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -565,7 +567,7 @@
     {/if}
     
     <!-- 云库着法 -->
-    {#if cloudMoves && cloudMoves.length > 0}
+    {#if showCloudMoves && cloudMoves && cloudMoves.length > 0}
       <!-- 检测是否有重叠的着法（终点相同或起点相同） -->
       {@const displayMoves = cloudMoves.slice(0, 4)}
       <!-- 按位置分组着法 -->

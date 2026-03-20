@@ -16,6 +16,7 @@
     nodeMap: NodeMap;
     currentNode: ChessNode;
     currentPath: string[];
+    showCloudMoves: boolean;
   }
 
   let {
@@ -27,6 +28,7 @@
     nodeMap,
     currentNode,
     currentPath,
+    showCloudMoves,
   }: Props = $props();
 
   let lastMove = $derived(currentNode.data);
@@ -60,7 +62,7 @@
 </script>
 
 <div class="tree-view {position}">
-    <Board {settings} {board} {lastMove} {markedPos} {currentTurn} {eventBus} {rotated} {variations} {currentMove} {cloudMoves} />
+    <Board {settings} {board} {lastMove} {markedPos} {currentTurn} {eventBus} {rotated} {variations} {currentMove} {cloudMoves} {showCloudMoves} />
     <Toolbar {eventBus} />
     <Tree {nodeMap} {eventBus} {currentNode} {currentPath} {settings} />
   </div>
