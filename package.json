@@ -1,41 +1,47 @@
 {
-  "name": "obsidian-xiangqi",
-  "private": true,
-  "version": "2.5.27",
-  "description": "Render xiangqi(Chinese chess) positions diagrams in a note.",
-  "main": "main.js",
-  "type": "module",
-  "scripts": {
-    "dev": "vite build --mode development && node -e \"require('fs').copyFileSync('manifest.json', './test-vault/.obsidian/plugins/xiangqi/manifest.json')\"",
-    "build": "vite build --mode production && node -e \"require('fs').copyFileSync('manifest.json', 'build/manifest.json')\"",
-    "check": "svelte-check --tsconfig ./tsconfig.json",
-    "test": "vitest",
-    "test:watch": "vitest watch"
-  },
-  "keywords": [
-    "obsidian",
-    "plugin",
-    "svelte",
-    "svelte5",
-    "typescript"
-  ],
-  "author": "weshell",
-  "authorUrl": "https://space.bilibili.com/156446344",
-  "license": "MIT",
-  "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^6.2.1",
-    "@tsconfig/svelte": "^5.0.4",
-    "@types/node": "^24.3.0",
-    "obsidian": "^1.4.11",
-    "svelte": "^5.0.0",
-    "svelte-check": "^4.0.0",
-    "tslib": "^2.6.2",
-    "typescript": "^5.5.0",
-    "vite": "^7.3.0",
-    "vitest": "^3.2.4"
-  },
-  "dependencies": {
-    "@types/d3": "^7.4.3",
-    "d3": "^7.9.0"
-  }
+    "name": "obsidian-xiangqi",
+    "private": true,
+    "version": "5.0.2",
+    "description": "Render xiangqi(Chinese chess) positions diagrams in a note.",
+    "main": "main.js",
+    "type": "module",
+    "scripts": {
+        "dev": "vite build --mode development && node -e \"require('fs').copyFileSync('manifest.json', './test-vault/.obsidian/plugins/xiangqi/manifest.json')\"",
+        "build": "vite build --mode production && node -e \"require('fs').copyFileSync('manifest.json', 'build/manifest.json')\"",
+        "build:patch": "node scripts/bump-version.js patch && npm run build && node scripts/bump-version.js patch --archive",
+        "build:minor": "node scripts/bump-version.js minor && npm run build && node scripts/bump-version.js minor --archive",
+        "build:major": "node scripts/bump-version.js major && npm run build && node scripts/bump-version.js major --archive",
+        "version:patch": "node scripts/bump-version.js patch",
+        "version:minor": "node scripts/bump-version.js minor",
+        "version:major": "node scripts/bump-version.js major",
+        "check": "svelte-check --tsconfig ./tsconfig.json",
+        "test": "vitest",
+        "test:watch": "vitest watch"
+    },
+    "keywords": [
+        "obsidian",
+        "plugin",
+        "svelte",
+        "svelte5",
+        "typescript"
+    ],
+    "author": "000100",
+    "authorUrl": "https://space.bilibili.com/156446344",
+    "license": "MIT",
+    "devDependencies": {
+        "@sveltejs/vite-plugin-svelte": "^6.2.1",
+        "@tsconfig/svelte": "^5.0.4",
+        "@types/node": "^24.3.0",
+        "obsidian": "^1.4.11",
+        "svelte": "^5.0.0",
+        "svelte-check": "^4.0.0",
+        "tslib": "^2.6.2",
+        "typescript": "^5.5.0",
+        "vite": "^7.3.0",
+        "vitest": "^3.2.4"
+    },
+    "dependencies": {
+        "@types/d3": "^7.4.3",
+        "d3": "^7.9.0"
+    }
 }
