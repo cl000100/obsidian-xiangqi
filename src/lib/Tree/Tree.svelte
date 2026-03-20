@@ -489,7 +489,7 @@
 </script>
 
 <div class="tree-container">
-  <div class="svg-wrapper" tabindex="0" onkeydown={handleTreeKeydown}>
+  <div class="svg-wrapper" tabindex="0" role="button" onkeydown={handleTreeKeydown}>
     <svg
       bind:this={svgEl}
       width="100%"
@@ -573,10 +573,9 @@
               </g>
             {/if}
 
-            {#if getRegularComments(node).length > 0 || getAllAnnotations(node).length > 0}
-              {@const hasAnnotation = !!primaryAnnotation}
+            {#if getRegularComments(node).length > 0}
               <g
-                transform={`translate(${hasAnnotation ? 0.1 * width : 0.35 * width} ${-0.7 * height}) scale(${height * 0.03})`}
+                transform={`translate(${!!primaryAnnotation ? 0.1 * width : 0.35 * width} ${-0.7 * height}) scale(${height * 0.03})`}
                 fill="royalblue"
                 stroke="currentColor"
                 stroke-width={height * 0.15}
