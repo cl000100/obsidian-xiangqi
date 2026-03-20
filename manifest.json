@@ -1,7 +1,7 @@
 {
-    "id": "xiangqi",
-    "version": "5.0.4",
-    "name": "Chinese chess",
+    "id": "xiangqi2",
+    "version": "5.0.5",
+    "name": "Chess",
     "description": "A Chinese Chess plugin designed for Obsidian",
     "author": "000100",
     "authorUrl": "",
