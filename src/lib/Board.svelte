@@ -290,36 +290,53 @@
               </text>
               <!-- 旗标显示 -->
               {#if showAnnotationsOnBoard && renderedCurrentMove && renderedCurrentMove.to && renderedCurrentMove.to.x === x && renderedCurrentMove.to.y === y && renderedCurrentMove.comments && renderedCurrentMove.comments.length > 0}
-                {#each renderedCurrentMove.comments as comment}
-                  <g transform="translate({cellSize * 0.25}, {-cellSize * 0.25})"><!-- 右上角位置 -->
+                {#each renderedCurrentMove.comments as comment, commentIndex}
+                  {@const isFlag = comment.startsWith("flag-") || ["?!", "!", "?", "R+", "B+", "=", "R#", "B#"].includes(comment)}
+                  {@const displayText = comment === "flag-red" ? "R"
+                    : comment === "flag-blue" ? "B"
+                      : comment === "flag-yellow" ? "Y"
+                        : comment === "flag-green" ? "G"
+                          : comment === "?!" ? "骗"
+                            : comment === "!" ? "妙"
+                              : comment === "?" ? "关"
+                                : comment === "R+" ? "优"
+                                  : comment === "B+" ? "劣"
+                                    : comment === "=" ? "均"
+                                      : comment === "R#" ? "红胜"
+                                        : comment === "B#" ? "黑胜"
+                                          : comment}
+                  {@const lines = displayText.split('\n')}
+                  {@const lineCount = lines.length}
+                  {@const fontSize = cellSize * (isFlag ? 0.2 : 0.12)}
+                  {@const circleRadius = cellSize * (isFlag ? 0.15 : Math.max(0.15, 0.08 * lineCount + 0.1))}
+                  {@const offsetY = cellSize * 0.25 + commentIndex * cellSize * 0.35}
+                  <g transform="translate({cellSize * 0.25}, {-offsetY})">
                     <circle
-                      r={cellSize * 0.15}
+                      r={circleRadius}
                       fill="var(--color-accent)"
                       stroke="white"
                       stroke-width={cellSize * 0.02}
                     />
                     <text
                       x="0"
-                      y="0"
+                      y={isFlag ? 0 : -fontSize * (lineCount - 1) / 2}
                       fill="white"
-                      font-size={cellSize * 0.2}
+                      font-size={fontSize}
                       text-anchor="middle"
                       dominant-baseline="middle"
                       font-weight="bold"
                     >
-                      {comment === "flag-red" ? "R"
-                        : comment === "flag-blue" ? "B"
-                          : comment === "flag-yellow" ? "Y"
-                            : comment === "flag-green" ? "G"
-                              : comment === "?!" ? "骗"
-                                : comment === "!" ? "妙"
-                                  : comment === "?" ? "关"
-                                    : comment === "R+" ? "优"
-                                      : comment === "B+" ? "劣"
-                                        : comment === "=" ? "均"
-                                          : comment === "R#" ? "红胜"
-                                            : comment === "B#" ? "黑胜"
-                                              : comment}
+                      {#if isFlag}
+                        {displayText}
+                      {:else}
+                        {#each lines as line, lineIndex}
+                          <tspan
+                            x="0"
+                            dy={lineIndex === 0 ? 0 : fontSize * 1.2}
+                            text-anchor="middle"
+                          >{line}</tspan>
+                        {/each}
+                      {/if}
                     </text>
                   </g>
                 {/each}
@@ -726,7 +743,7 @@
                   x="0"
                   y="0"
                   fill={adjustedColor}
-                  font-size={cellSize * 0.26}
+                  font-size={cellSize * 0.32}
                   text-anchor="middle"
                   dominant-baseline="central"
                   opacity="0.95"
@@ -784,7 +801,7 @@
                     x="0"
                     y="0"
                     fill={adjustedColor}
-                    font-size={cellSize * 0.26}
+                    font-size={cellSize * 0.32}
                     text-anchor="end"
                     dominant-baseline="central"
                     opacity="0.95"
@@ -802,7 +819,7 @@
                     x="0"
                     y="0"
                     fill={adjustedColor}
-                    font-size={cellSize * 0.26}
+                    font-size={cellSize * 0.32}
                     text-anchor="middle"
                     dominant-baseline="central"
                     opacity="0.95"
@@ -844,7 +861,7 @@
                   x="0"
                   y="0"
                   fill={adjustedColor}
-                  font-size={cellSize * 0.26}
+                  font-size={cellSize * 0.32}
                   text-anchor="middle"
                   dominant-baseline="central"
                   opacity="0.95"
