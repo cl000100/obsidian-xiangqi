@@ -288,64 +288,77 @@
               >
                 {PIECE_CHARS[piece as keyof typeof PIECE_CHARS]}
               </text>
-              <!-- 旗标显示 -->
-              {#if showAnnotationsOnBoard && renderedCurrentMove && renderedCurrentMove.to && renderedCurrentMove.to.x === x && renderedCurrentMove.to.y === y && renderedCurrentMove.comments && renderedCurrentMove.comments.length > 0}
-                {#each renderedCurrentMove.comments as comment, commentIndex}
-                  {@const isFlag = comment.startsWith("flag-") || ["?!", "!", "?", "R+", "B+", "=", "R#", "B#"].includes(comment)}
-                  {@const displayText = comment === "flag-red" ? "R"
-                    : comment === "flag-blue" ? "B"
-                      : comment === "flag-yellow" ? "Y"
-                        : comment === "flag-green" ? "G"
-                          : comment === "?!" ? "骗"
-                            : comment === "!" ? "妙"
-                              : comment === "?" ? "关"
-                                : comment === "R+" ? "优"
-                                  : comment === "B+" ? "劣"
-                                    : comment === "=" ? "均"
-                                      : comment === "R#" ? "红胜"
-                                        : comment === "B#" ? "黑胜"
-                                          : comment}
-                  {@const lines = displayText.split('\n')}
-                  {@const lineCount = lines.length}
-                  {@const fontSize = cellSize * (isFlag ? 0.2 : 0.12)}
-                  {@const circleRadius = cellSize * (isFlag ? 0.15 : Math.max(0.15, 0.08 * lineCount + 0.1))}
-                  {@const offsetY = cellSize * 0.25 + commentIndex * cellSize * 0.35}
-                  <g transform="translate({cellSize * 0.25}, {-offsetY})">
-                    <circle
-                      r={circleRadius}
-                      fill="var(--color-accent)"
-                      stroke="white"
-                      stroke-width={cellSize * 0.02}
-                    />
-                    <text
-                      x="0"
-                      y={isFlag ? 0 : -fontSize * (lineCount - 1) / 2}
-                      fill="white"
-                      font-size={fontSize}
-                      text-anchor="middle"
-                      dominant-baseline="middle"
-                      font-weight="bold"
-                    >
-                      {#if isFlag}
-                        {displayText}
-                      {:else}
-                        {#each lines as line, lineIndex}
-                          <tspan
-                            x="0"
-                            dy={lineIndex === 0 ? 0 : fontSize * 1.2}
-                            text-anchor="middle"
-                          >{line}</tspan>
-                        {/each}
-                      {/if}
-                    </text>
-                  </g>
-                {/each}
-              {/if}
             </g>
           {/if}
         {/each}
       {/each}
     </g>
+
+    <!-- 注释显示（独立层，确保在最上层） -->
+    {#if showAnnotationsOnBoard && renderedCurrentMove && renderedCurrentMove.to && renderedCurrentMove.comments && renderedCurrentMove.comments.length > 0}
+      {@const posX = (renderedCurrentMove.to.x + 1) * cellSize}
+      {@const posY = (renderedCurrentMove.to.y + 1) * cellSize}
+      {@const flagComments = renderedCurrentMove.comments.filter(c => c.startsWith("flag-") || ["?!", "!", "?", "R+", "B+", "=", "R#", "B#"].includes(c))}
+      {@const textComments = renderedCurrentMove.comments.filter(c => !c.startsWith("flag-") && !["?!", "!", "?", "R+", "B+", "=", "R#", "B#"].includes(c))}
+      <g transform="translate({posX}, {posY})">
+        <!-- 旗标注释（带圆圈） -->
+        {#each flagComments as comment, commentIndex}
+          {@const displayText = comment === "flag-red" ? "R"
+            : comment === "flag-blue" ? "B"
+              : comment === "flag-yellow" ? "Y"
+                : comment === "flag-green" ? "G"
+                  : comment === "?!" ? "骗"
+                    : comment === "!" ? "妙"
+                      : comment === "?" ? "关"
+                        : comment === "R+" ? "优"
+                          : comment === "B+" ? "劣"
+                            : comment === "=" ? "均"
+                              : comment === "R#" ? "红胜"
+                                : comment === "B#" ? "黑胜"
+                                  : comment}
+          {@const offsetY = cellSize * 0.25 + commentIndex * cellSize * 0.35}
+          <g transform="translate({cellSize * 0.25}, {-offsetY})">
+            <circle
+              r={cellSize * 0.15}
+              fill="var(--color-accent)"
+              stroke="white"
+              stroke-width={cellSize * 0.02}
+            />
+            <text
+              x="0"
+              y="0"
+              fill="white"
+              font-size={cellSize * 0.2}
+              text-anchor="middle"
+              dominant-baseline="middle"
+              font-weight="bold"
+            >
+              {displayText}
+            </text>
+          </g>
+        {/each}
+        <!-- 普通文本注释（不带圆圈，多行合并为一行） -->
+        {#if textComments.length > 0}
+          {@const mergedText = textComments.map(c => c.replace(/\n/g, ' ')).join(' ')}
+          {@const flagCount = flagComments.length}
+          {@const offsetY = cellSize * 0.25 + flagCount * cellSize * 0.35}
+          <g transform="translate({cellSize * 0.25}, {-offsetY})">
+            <text
+              x="0"
+              y="0"
+              fill="white"
+              font-size={cellSize * 0.14}
+              text-anchor="middle"
+              dominant-baseline="middle"
+              font-weight="bold"
+              style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);"
+            >
+              {mergedText}
+            </text>
+          </g>
+        {/if}
+      </g>
+    {/if}
 
     <!-- 分支线路 -->
     {#if variations && variations.length > 1}
