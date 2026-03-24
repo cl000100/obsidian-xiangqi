@@ -29,6 +29,7 @@
     { title: "蓝色", color: "flag-blue", event: "setPathColor" },
     { title: "黄色", color: "flag-yellow", event: "setPathColor" },
     { title: "清除", color: "clear", event: "clearAllPathColor" },
+    { title: "注释", color: "comment", event: "toggleCommentType" },
   ];
 
   // 标注项目

@@ -98,7 +98,40 @@
   }
 
   function getRegularComments(node: ChessNode): string[] {
-    return node.comments?.filter((c) => !ALL_ANNOTATION_KEYS.includes(c) && !c.startsWith("flag-")) ?? [];
+    return node.comments?.filter((c) => !ALL_ANNOTATION_KEYS.includes(c) && !c.startsWith("flag-") && !c.startsWith("custom:")) ?? [];
+  }
+
+  function getCustomComments(node: ChessNode): string[] {
+    return node.comments?.filter((c) => c.startsWith("custom:")) ?? [];
+  }
+
+  function toggleCommentType(node: ChessNode) {
+    if (!node.comments) return;
+    const regularComments = getRegularComments(node);
+    const customComments = getCustomComments(node);
+    
+    if (regularComments.length > 0) {
+      const newComments = node.comments.map((c) => {
+        if (!ALL_ANNOTATION_KEYS.includes(c) && !c.startsWith("flag-") && !c.startsWith("custom:")) {
+          return `custom:${c}`;
+        }
+        return c;
+      });
+      node.comments = newComments;
+    } else if (customComments.length > 0) {
+      const newComments = node.comments.map((c) => {
+        if (c.startsWith("custom:")) {
+          return c.replace("custom:", "");
+        }
+        return c;
+      });
+      node.comments = newComments;
+    }
+    
+    nodeMap.set(node.id, node);
+    eventBus.emit("updateNodeComments", { nodeId: node.id, comments: node.comments });
+    eventBus.emit("updateUI");
+    eventBus.emit("updatePGN", null);
   }
 
   function getPathColor(node: ChessNode): string | undefined {
@@ -288,7 +321,13 @@
     const regularComments = commentsText.split("\n").filter((c) => c.trim() !== "");
     const existingAnnotations = getAllAnnotations(currentNode);
     const existingPathColors = getPathColors(currentNode);
-    currentNode.comments = [...existingPathColors, ...existingAnnotations, ...regularComments];
+    // 检查当前节点是否有自定义注释
+    const hasCustomComments = getCustomComments(currentNode).length > 0;
+    // 如果有自定义注释，则将所有注释保存为自定义注释
+    const finalComments = hasCustomComments 
+      ? regularComments.map(c => `custom:${c}`) 
+      : regularComments;
+    currentNode.comments = [...existingPathColors, ...existingAnnotations, ...finalComments];
     // 更新nodeMap中的对应节点，确保数据同步
     nodeMap.set(currentNode.id, currentNode);
     // 发送事件通知host更新数据
@@ -474,7 +513,9 @@
     nodeMap.size;
 
     const node = nodeMap.get(currentNode.id) || currentNode;
-    commentsText = getRegularComments(node).join("\n");
+    const regularComments = getRegularComments(node);
+    const customComments = getCustomComments(node).map(c => c.replace("custom:", ""));
+    commentsText = [...regularComments, ...customComments].join("\n");
 
     tick().then(() => {
       if (textareaEl) adjustTextareaHeight();
@@ -577,6 +618,19 @@
               <g
                 transform={`translate(${!!primaryAnnotation ? 0.1 * width : 0.35 * width} ${-0.7 * height}) scale(${height * 0.03})`}
                 fill="royalblue"
+                stroke="currentColor"
+                stroke-width={height * 0.15}
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                {@html lucide_message_square_text}
+              </g>
+            {/if}
+
+            {#if getCustomComments(node).length > 0}
+              <g
+                transform={`translate(${!!primaryAnnotation || getRegularComments(node).length > 0 ? 0.1 * width : 0.35 * width} ${-0.7 * height}) scale(${height * 0.03})`}
+                fill="#ff4500"
                 stroke="currentColor"
                 stroke-width={height * 0.15}
                 stroke-linecap="round"

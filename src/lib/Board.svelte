@@ -299,7 +299,8 @@
       {@const posX = (renderedCurrentMove.to.x + 1) * cellSize}
       {@const posY = (renderedCurrentMove.to.y + 1) * cellSize}
       {@const flagComments = renderedCurrentMove.comments.filter(c => c.startsWith("flag-") || ["?!", "!", "?", "R+", "B+", "=", "R#", "B#"].includes(c))}
-      {@const textComments = renderedCurrentMove.comments.filter(c => !c.startsWith("flag-") && !["?!", "!", "?", "R+", "B+", "=", "R#", "B#"].includes(c))}
+      {@const textComments = renderedCurrentMove.comments.filter(c => !c.startsWith("flag-") && !c.startsWith("custom:") && !["?!", "!", "?", "R+", "B+", "=", "R#", "B#"].includes(c))}
+      {@const customComments = renderedCurrentMove.comments.filter(c => c.startsWith("custom:")).map(c => c.replace("custom:", ""))}
       <g transform="translate({posX}, {posY})">
         <!-- 旗标注释（带圆圈） -->
         {#each flagComments as comment, commentIndex}
@@ -354,6 +355,27 @@
               style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);"
             >
               {mergedText}
+            </text>
+          </g>
+        {/if}
+        <!-- 自定义注释（不带圆圈，多行合并为一行） -->
+        {#if customComments.length > 0}
+          {@const mergedCustomText = customComments.map(c => c.replace(/\n/g, ' ')).join(' ')}
+          {@const flagCount = flagComments.length}
+          {@const textCount = textComments.length}
+          {@const offsetY = cellSize * 0.25 + (flagCount + textCount) * cellSize * 0.35}
+          <g transform="translate({cellSize * 0.25}, {-offsetY})">
+            <text
+              x="0"
+              y="0"
+              fill="white"
+              font-size={cellSize * 0.14}
+              text-anchor="middle"
+              dominant-baseline="middle"
+              font-weight="bold"
+              style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);"
+            >
+              {mergedCustomText}
             </text>
           </g>
         {/if}

@@ -897,14 +897,14 @@ const ActionsModule = {
                                         }
                                         
                                         // 移除已有的开局识别备注
-                                        targetNode.comments = targetNode.comments.filter((comment: string) => !comment.startsWith('开局：') && !comment.startsWith('分支：'));
+                                        targetNode.comments = targetNode.comments.filter((comment: string) => !comment.startsWith('custom:开局：') && !comment.startsWith('custom:分支：'));
                                         
-                                        // 添加新的开局识别备注
-                                        targetNode.comments.push(`开局：${res.opening}（${res.ecco}）`);
+                                        // 添加新的开局识别备注（使用 custom: 前缀）
+                                        targetNode.comments.push(`custom:开局：${res.opening}（${res.ecco}）`);
                                         
                                         // 如果有分支，则添加分支信息
                                         if (res.variation && res.variation.trim() !== '') {
-                                            targetNode.comments.push(`分支：${res.variation}`);
+                                            targetNode.comments.push(`custom:分支：${res.variation}`);
                                         }
                                         
                                         // 触发更新事件
@@ -967,6 +967,40 @@ const ActionsModule = {
                     for (const { nodeId, comments } of updatedNodes) {
                         eventBus.emit('updateNodeComments', { nodeId, comments });
                     }
+                    break;
+                }
+                case 'toggleCommentType': {
+                    if (!host.currentNode) break;
+                    const node = host.currentNode;
+                    if (!node.comments) break;
+                    
+                    const regularComments = node.comments.filter((c: string) => 
+                        !["R+", "B+", "=", "?", "!", "?!", "R#", "B#"].includes(c) && 
+                        !c.startsWith('flag-') && 
+                        !c.startsWith('custom:')
+                    );
+                    const customComments = node.comments.filter((c: string) => c.startsWith('custom:'));
+                    
+                    if (regularComments.length > 0) {
+                        node.comments = node.comments.map((c: string) => {
+                            if (!["R+", "B+", "=", "?", "!", "?!", "R#", "B#"].includes(c) && 
+                                !c.startsWith('flag-') && 
+                                !c.startsWith('custom:')) {
+                                return `custom:${c}`;
+                            }
+                            return c;
+                        });
+                    } else if (customComments.length > 0) {
+                        node.comments = node.comments.map((c: string) => {
+                            if (c.startsWith('custom:')) {
+                                return c.replace('custom:', '');
+                            }
+                            return c;
+                        });
+                    }
+                    
+                    host.nodeMap.set(node.id, node);
+                    eventBus.emit('updateNodeComments', { nodeId: node.id, comments: node.comments });
                     break;
                 }
             }
