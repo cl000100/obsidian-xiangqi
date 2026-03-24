@@ -98,11 +98,15 @@
   }
 
   function getRegularComments(node: ChessNode): string[] {
-    return node.comments?.filter((c) => !ALL_ANNOTATION_KEYS.includes(c) && !c.startsWith("flag-") && !c.startsWith("custom:")) ?? [];
+    return node.comments?.filter((c) => !ALL_ANNOTATION_KEYS.includes(c) && !c.startsWith("flag-") && !c.startsWith("custom:") && !c.startsWith("label:")) ?? [];
   }
 
   function getCustomComments(node: ChessNode): string[] {
     return node.comments?.filter((c) => c.startsWith("custom:")) ?? [];
+  }
+
+  function getLabels(node: ChessNode): string[] {
+    return node.comments?.filter((c) => c.startsWith("label:")) ?? [];
   }
 
   function toggleCommentType(node: ChessNode) {
@@ -323,10 +327,15 @@
     const existingPathColors = getPathColors(currentNode);
     // 检查当前节点是否有自定义注释
     const hasCustomComments = getCustomComments(currentNode).length > 0;
-    // 如果有自定义注释，则将所有注释保存为自定义注释
-    const finalComments = hasCustomComments 
-      ? regularComments.map(c => `custom:${c}`) 
-      : regularComments;
+    // 处理注释，保留标签注释
+    const finalComments = regularComments.map(c => {
+      // 保留标签注释
+      if (c.startsWith("label:")) {
+        return c;
+      }
+      // 其他注释根据类型处理
+      return hasCustomComments ? `custom:${c}` : c;
+    });
     currentNode.comments = [...existingPathColors, ...existingAnnotations, ...finalComments];
     // 更新nodeMap中的对应节点，确保数据同步
     nodeMap.set(currentNode.id, currentNode);
@@ -515,7 +524,8 @@
     const node = nodeMap.get(currentNode.id) || currentNode;
     const regularComments = getRegularComments(node);
     const customComments = getCustomComments(node).map(c => c.replace("custom:", ""));
-    commentsText = [...regularComments, ...customComments].join("\n");
+    const labels = getLabels(node); // 保留完整的 label: 前缀
+    commentsText = [...regularComments, ...customComments, ...labels].join("\n");
 
     tick().then(() => {
       if (textareaEl) adjustTextareaHeight();
@@ -638,6 +648,23 @@
               >
                 {@html lucide_message_square_text}
               </g>
+            {/if}
+
+            {#if getLabels(node).length > 0}
+              {@const labels = getLabels(node).map(label => label.replace("label:", ""))}
+              {@const labelText = labels.join(" ")}
+              <text
+                x={width * 1.5}
+                y={0}
+                fill="#4CAF50"
+                font-size={height * 0.6}
+                text-anchor="start"
+                dominant-baseline="middle"
+                font-weight="bold"
+                style="white-space: nowrap;"
+              >
+                {labelText}
+              </text>
             {/if}
           </g>
         {/each}
