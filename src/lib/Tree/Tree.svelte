@@ -62,10 +62,12 @@
 
   // ---- 常量 ----
   let currentCellSize = $derived(isIOS() ? (settings?.iOSCellSize || 40) : (settings?.cellSize || 50));
-  let spacingX = $derived(currentCellSize * 0.44);
+  let spacingX = $derived(currentCellSize * 0.5); // 调整水平间距
   let spacingY = $derived(currentCellSize * 0.3);
   let width = $derived(currentCellSize * 0.26);
   let height = $derived(currentCellSize * 0.22);
+  // 标签宽度（4个汉字）
+  let labelWidth = $derived(currentCellSize * 0.4);
   const lucide_message_square_text = `<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M7 11h10"/><path d="M7 15h6"/><path d="M7 7h8"/>`;
   const lucide_thumbs_up = `<path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/><path d="M7 10v12"/>`;
   const lucide_thumbs_down = `<path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2h13a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/><path d="M17 14V2"/>`;
@@ -329,9 +331,11 @@
     const hasCustomComments = getCustomComments(currentNode).length > 0;
     // 处理注释，保留标签注释
     const finalComments = regularComments.map(c => {
-      // 保留标签注释
+      // 保留标签注释，限制长度为4个汉字
       if (c.startsWith("label:")) {
-        return c;
+        const labelContent = c.substring(6); // 去除 "label:" 前缀
+        const truncatedContent = labelContent.substring(0, 4); // 限制为4个汉字
+        return `label:${truncatedContent}`;
       }
       // 其他注释根据类型处理
       return hasCustomComments ? `custom:${c}` : c;
@@ -574,6 +578,7 @@
 
         {#each renderedNodes as node (node.id)}
           {@const primaryAnnotation = getPrimaryAnnotation(node)}
+          {@const hasLabel = getLabels(node).length > 0}
           <g
             class="node-group"
             transform="translate({node.x! * spacingX} {node.y! * spacingY})"
@@ -652,19 +657,35 @@
 
             {#if getLabels(node).length > 0}
               {@const labels = getLabels(node).map(label => label.replace("label:", ""))}
-              {@const labelText = labels.join(" ")}
-              <text
-                x={width * 1.5}
-                y={0}
-                fill="#4CAF50"
-                font-size={height * 0.6}
-                text-anchor="start"
-                dominant-baseline="middle"
-                font-weight="bold"
-                style="white-space: nowrap;"
-              >
-                {labelText}
-              </text>
+              {@const labelText = labels.join(" ").substring(0, 4)}
+              {@const firstLine = labelText.substring(0, 2)}
+              {@const secondLine = labelText.substring(2, 4)}
+              <g transform="translate({width * 0.6} {-height * 0.35})">
+                <text
+                  x="0"
+                  y="0"
+                  fill="#4CAF50"
+                  font-size={height * 0.5}
+                  text-anchor="start"
+                  dominant-baseline="middle"
+                  font-weight="bold"
+                  style="pointer-events: none;"
+                >
+                  {firstLine}
+                </text>
+                <text
+                  x="0"
+                  y={height * 0.55}
+                  fill="#4CAF50"
+                  font-size={height * 0.5}
+                  text-anchor="start"
+                  dominant-baseline="middle"
+                  font-weight="bold"
+                  style="pointer-events: none;"
+                >
+                  {secondLine}
+                </text>
+              </g>
             {/if}
           </g>
         {/each}

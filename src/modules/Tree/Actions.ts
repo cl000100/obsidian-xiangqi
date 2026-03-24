@@ -537,11 +537,20 @@ const ActionsModule = {
                     // 1. 从 root 节点获取 fen 和 firstturn
                     const initialFen = genFENFromBoard(host.root.board!, host.root.side === 'red' ? 'black' : 'red');
 
-                    // 2. 根据 currentPath 获取行棋的着法
-                    // host.mainPath 包含 root 节点，但 root 节点没有 move data，所以从第二个节点开始
+                    // 2. 只获取从根节点到当前节点的着法
                     const movesOnCurrentPath: string[] = [];
-                    for (let i = 1; i < host.currentPath.length; i++) {
-                        const nodeId = host.currentPath[i];
+                    // 向上遍历收集从根节点到当前节点的路径
+                    const pathToCurrent: string[] = [];
+                    let node = host.currentNode;
+                    while (node) {
+                        pathToCurrent.push(node.id);
+                        node = node.parentID ? host.nodeMap.get(node.parentID) : null;
+                    }
+                    pathToCurrent.reverse(); // 反转为根到当前节点顺序
+                    
+                    // 遍历路径，收集着法（跳过 root 节点）
+                    for (let i = 1; i < pathToCurrent.length; i++) {
+                        const nodeId = pathToCurrent[i];
                         const node = host.nodeMap.get(nodeId);
                         if (node && node.data && node.data.ICCS) {
                             movesOnCurrentPath.push(node.data.ICCS.replace('-', '').toLowerCase());
