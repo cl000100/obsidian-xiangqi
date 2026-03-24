@@ -551,7 +551,38 @@
       height="100%"
       class="tree-svg"
     >
+      <!-- Y轴坐标系（左右固定，上下随视图移动） -->
+        {#if renderedNodes.length > 0}
+          {@const nonStartNodes = renderedNodes.filter(node => node.data)} <!-- 排除"始"节点 -->
+          {#if nonStartNodes.length > 0}
+            {@const minY = Math.min(...nonStartNodes.map(n => n.y!))}
+            {@const maxY = Math.max(...nonStartNodes.map(n => n.y!))}
+            {@const yRange = maxY - minY}
+            {@const stepCount = Math.floor(yRange / 2) + 1} <!-- 每两个y值为一个回合 -->
+            
+            <g class="y-axis" transform={`translate(0, ${zoomTransform.y})`}>
+              <!-- 只显示从起点到终点的连续刻度 -->
+              {#each Array(stepCount).fill(0) as _, index}
+                {@const yPosition = minY + index * 2} <!-- 每两个y值显示一个刻度 -->
+                <text
+                  x="18"
+                  y={yPosition * spacingY * zoomTransform.k + 4}
+                  text-anchor="end"
+                  fill="var(--text-color)"
+                  font-size="11"
+                  opacity="0.6"
+                  style="font-weight: 400;"
+                >
+                  {index + 1} <!-- 连续的回合数，从1开始 -->
+                </text>
+              {/each}
+            </g>
+          {/if}
+        {/if}
+      
+      <!-- 分支树内容（可缩放和移动） -->
       <g transform={zoomTransform.toString()}>
+        <!-- 分支树线条 -->
         {#each renderedNodes as node}
           {#each node.children as child}
             {@const pathColor = getEdgePathColor(node, child, nodeMap)}
@@ -576,6 +607,7 @@
           {/each}
         {/each}
 
+        <!-- 分支树节点 -->
         {#each renderedNodes as node (node.id)}
           {@const primaryAnnotation = getPrimaryAnnotation(node)}
           {@const hasLabel = getLabels(node).length > 0}
