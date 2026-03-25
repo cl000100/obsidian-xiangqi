@@ -560,20 +560,30 @@
             {@const yRange = maxY - minY}
             {@const stepCount = Math.floor(yRange / 2) + 1} <!-- 每两个y值为一个回合 -->
             
+            <!-- 计算当前选中的回合数 -->
+            {@const currentRound = currentNode && currentNode.step ? Math.ceil(currentNode.step / 2) : 0}
+            <!-- 计算当前选中的棋子颜色 -->
+            {@const currentColor = currentNode && currentNode.side ? (currentNode.side === "red" ? "#ff4444" : "#4488ff") : "var(--text-color)"}
+            
             <g class="y-axis" transform={`translate(0, ${zoomTransform.y})`}>
               <!-- 只显示从起点到终点的连续刻度 -->
               {#each Array(stepCount).fill(0) as _, index}
                 {@const yPosition = minY + index * 2} <!-- 每两个y值显示一个刻度 -->
+                {@const roundNumber = index + 1} <!-- 回合数 -->
+                {@const isActive = roundNumber === currentRound} <!-- 是否是当前选中的回合 -->
+                {@const textColor = isActive ? currentColor : "var(--text-color)"} <!-- 动态颜色 -->
+                {@const textOpacity = isActive ? 0.8 : 0.3} <!-- 动态透明度 -->
+                
                 <text
                   x="18"
                   y={yPosition * spacingY * zoomTransform.k + 4}
                   text-anchor="end"
-                  fill="var(--text-color)"
+                  fill={textColor}
                   font-size="11"
-                  opacity="0.6"
+                  opacity={textOpacity}
                   style="font-weight: 400;"
                 >
-                  {index + 1} <!-- 连续的回合数，从1开始 -->
+                  {roundNumber} <!-- 连续的回合数，从1开始 -->
                 </text>
               {/each}
             </g>
