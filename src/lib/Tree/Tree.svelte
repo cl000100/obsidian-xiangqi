@@ -330,16 +330,15 @@
     // 检查当前节点是否有自定义注释
     const hasCustomComments = getCustomComments(currentNode).length > 0;
     // 处理注释，保留标签注释
-    const finalComments = regularComments.map(c => {
-      // 保留标签注释，限制长度为4个汉字
-      if (c.startsWith("label:")) {
-        const labelContent = c.substring(6); // 去除 "label:" 前缀
-        const truncatedContent = labelContent.substring(0, 4); // 限制为4个汉字
-        return `label:${truncatedContent}`;
-      }
-      // 其他注释根据类型处理
-      return hasCustomComments ? `custom:${c}` : c;
-    });
+      const finalComments = regularComments.map(c => {
+        // 保留标签注释，不限制长度
+        if (c.startsWith("label:")) {
+          const labelContent = c.substring(6); // 去除 "label:" 前缀
+          return `label:${labelContent}`;
+        }
+        // 其他注释根据类型处理
+        return hasCustomComments ? `custom:${c}` : c;
+      });
     currentNode.comments = [...existingPathColors, ...existingAnnotations, ...finalComments];
     // 更新nodeMap中的对应节点，确保数据同步
     nodeMap.set(currentNode.id, currentNode);
