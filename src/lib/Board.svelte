@@ -498,18 +498,22 @@
               <!-- 有重叠且不是主线路，或路线交叉的着法，或起点相同且不是第一个的着法，使用弧线绘制 -->
               <!-- 计算弧线参数 -->
               {@const angle = Math.atan2(dy, dx)}
-              <!-- 为起点相同的着法生成不同的弧线半径和方向 -->
-              {@const arcRadius = hasStartOverlap ? Math.max(cellSize * 2, distance / 2) + (startIndex * cellSize) : Math.max(cellSize * 2, distance / 2)}
-              {@const sweepFlag = hasStartOverlap && startIndex % 2 === 1 ? 0 : 1} <!-- 交替弧线方向 -->
-              {@const arcCenterX = toX - Math.cos(angle) * arcRadius}
-              {@const arcCenterY = toY - Math.sin(angle) * arcRadius}
-              {@const startAngle = angle + Math.PI}
-              {@const endAngle = angle}
-              {@const largeArcFlag = 0}
+              <!-- 为起点相同的着法生成不同的弧线半径和方向，减小弧度 -->
+              {@const arcRadius = hasStartOverlap ? Math.min(cellSize * 1.5, distance / 3) + (startIndex * cellSize * 0.3) : Math.min(cellSize * 1.5, distance / 3)}
+              <!-- 计算控制点（二次贝塞尔曲线） -->
+              {@const midX = (fromX + lineEndX) / 2}
+              {@const midY = (fromY + lineEndY) / 2}
+              <!-- 计算垂直于直线的方向 -->
+              {@const perpX = -dy / distance}
+              {@const perpY = dx / distance}
+              <!-- 根据起点索引决定弧线方向，确保弧线向外弯曲 -->
+              {@const arcDirection = hasStartOverlap ? (startIndex % 2 === 1 ? 1 : -1) : 1}
+              {@const controlX = midX + perpX * arcRadius * arcDirection}
+              {@const controlY = midY + perpY * arcRadius * arcDirection}
               
-              <!-- 绘制弧线 -->
+              <!-- 绘制二次贝塞尔曲线弧线 -->
               <path
-                d={`M ${fromX} ${fromY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} ${sweepFlag} ${lineEndX} ${lineEndY}`}
+                d={`M ${fromX} ${fromY} Q ${controlX} ${controlY} ${lineEndX} ${lineEndY}`}
                 stroke={color}
                 stroke-width={cellSize * 0.08}
                 stroke-dasharray={isMainLine ? 'none' : `${cellSize * 0.2} ${cellSize * 0.1}`}
@@ -792,18 +796,22 @@
               <!-- 有终点重叠且不是胜率最高的，或路线交叉的着法，或起点相同且不是胜率最高的着法，使用弧线绘制，并沿着来源方向偏移标签 -->
               <!-- 计算弧线参数 -->
               {@const angle = Math.atan2(dy, dx)}
-              <!-- 为起点相同的着法生成不同的弧线半径和方向 -->
-              {@const arcRadius = hasStartOverlap ? Math.max(cellSize * 2, distance / 2) + (startIndex * cellSize) : Math.max(cellSize * 2, distance / 2)}
-              {@const sweepFlag = hasStartOverlap && startIndex % 2 === 1 ? 0 : 1} <!-- 交替弧线方向 -->
-              {@const arcCenterX = toX - Math.cos(angle) * arcRadius}
-              {@const arcCenterY = toY - Math.sin(angle) * arcRadius}
-              {@const startAngle = angle + Math.PI}
-              {@const endAngle = angle}
-              {@const largeArcFlag = 0}
+              <!-- 为起点相同的着法生成不同的弧线半径和方向，减小弧度 -->
+              {@const arcRadius = hasStartOverlap ? Math.min(cellSize * 1.5, distance / 3) + (startIndex * cellSize * 0.3) : Math.min(cellSize * 1.5, distance / 3)}
+              <!-- 计算控制点（二次贝塞尔曲线） -->
+              {@const midX = (fromX + lineEndX) / 2}
+              {@const midY = (fromY + lineEndY) / 2}
+              <!-- 计算垂直于直线的方向 -->
+              {@const perpX = -dy / distance}
+              {@const perpY = dx / distance}
+              <!-- 根据起点索引决定弧线方向，确保弧线向外弯曲 -->
+              {@const arcDirection = hasStartOverlap ? (startIndex % 2 === 1 ? 1 : -1) : 1}
+              {@const controlX = midX + perpX * arcRadius * arcDirection}
+              {@const controlY = midY + perpY * arcRadius * arcDirection}
               
-              <!-- 绘制弧线 -->
+              <!-- 绘制二次贝塞尔曲线弧线 -->
               <path
-                d={`M ${fromX} ${fromY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} ${sweepFlag} ${lineEndX} ${lineEndY}`}
+                d={`M ${fromX} ${fromY} Q ${controlX} ${controlY} ${lineEndX} ${lineEndY}`}
                 stroke={adjustedColor}
                 stroke-width={cellSize * 0.06}
                 stroke-dasharray={`${cellSize * 0.15} ${cellSize * 0.1}`}
