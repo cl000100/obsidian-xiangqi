@@ -560,7 +560,7 @@
             {@const stepCount = Math.floor(yRange / 2) + 1} <!-- 每两个y值为一个回合 -->
             
             <!-- 计算当前选中的回合数 -->
-            {@const currentRound = currentNode && currentNode.step ? Math.ceil(currentNode.step / 2) : 0}
+            {@const currentRound = currentNode && currentNode.y ? Math.ceil((currentNode.y) / 2) : 0}
             <!-- 计算当前选中的棋子颜色 -->
             {@const currentColor = currentNode && currentNode.side ? (currentNode.side === "red" ? "#ff4444" : "#4488ff") : "var(--text-color)"}
             
